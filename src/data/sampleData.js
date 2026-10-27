@@ -7,10 +7,10 @@ export const SAMPLE_RESUME = {
   email: "satyanarayanareddykolagatla@gmail.com",
   phone: "+91 8639822170",
   location: "Hyderabad, India",
-  linkedin: "LinkedIn",
-  portfolio: "Portfolio",
-  github: "",
-  summary: "",
+  linkedin: "https://www.linkedin.com/in/satyanarayana-reddy-kolagatla",
+  github: "https://github.com/satyanarayanareddy",
+  portfolio: "",
+  summary: "", // Original resume has no summary to fit on 1 page
   skills: {
     "Cloud (GCP)": ["BigQuery", "Cloud Storage", "Cloud Composer (Airflow)", "Data Fusion (ETL)", "Cloud KMS (Secret Management)", "Dataproc", "Dataflow", "Pub/Sub", "Apache Beam", "Dataplex", "Cloud Build", "Cloud Run", "Cloud Scheduler", "Cloud Monitoring", "Cloud Logging", "Artifact Registry", "Cloud IAM", "Discovery Engine (Vertex AI Search)"],
     "Languages / DBs": ["Python", "PySpark", "SQL", "Apache Spark"],
@@ -55,8 +55,8 @@ export const SAMPLE_RESUME = {
     }
   ],
   certifications: [
-    "Google Cloud Certified: Professional Data Engineer (link)",
-    "Microsoft Certified: Azure AI Fundamentals (link)",
+    "Google Cloud Certified: Professional Data Engineer",
+    "Microsoft Certified: Azure AI Fundamentals",
     "Solved 250+ algorithmic problems on LeetCode | 6-Star Python badge on Hacker Rank",
     "Received On-the-Spot Award at FISClouds for delivering critical project milestones"
   ],

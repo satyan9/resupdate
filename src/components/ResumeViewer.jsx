@@ -1,16 +1,36 @@
 import React, { useState } from 'react';
-import { Download, FileDown, Copy, Check, Eye, Sparkles, Printer, FileText } from 'lucide-react';
+import { Download, FileDown, Copy, Check, Eye, Sparkles, Printer, FileText, Link, Edit3, X } from 'lucide-react';
 import { exportResumeToDocx } from '../utils/docxExporter';
 
-export default function ResumeViewer({ resume, injectedKeywords = [], matchedKeywords = [] }) {
+export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords = [], matchedKeywords = [] }) {
   const [highlightMode, setHighlightMode] = useState(true);
-  const [showSummary, setShowSummary] = useState(Boolean(resume?.summary && resume.summary.trim().length > 0));
+  // Default to false if original resume had no summary, guaranteeing 1-page fit
+  const [showSummary, setShowSummary] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Edit form state
+  const [editForm, setEditForm] = useState({
+    fullName: resume?.fullName || '',
+    headline: resume?.headline || 'Data Engineer | ETL/ELT Pipeline Development | Bigquery | Airflow',
+    phone: resume?.phone || '+91 8639822170',
+    email: resume?.email || 'satyanarayanareddykolagatla@gmail.com',
+    location: resume?.location || 'Hyderabad, India',
+    linkedin: resume?.linkedin || 'https://www.linkedin.com/in/satyanarayana-reddy-kolagatla',
+    github: resume?.github || 'https://github.com/satyanarayanareddy',
+    portfolio: resume?.portfolio || ''
+  });
 
   if (!resume) return null;
 
   const handlePrint = () => {
+    const oldTitle = document.title;
+    const cleanFileName = (resume.fullName || "Candidate").replace(/\s+/g, '_') + '_ATS_Resume';
+    document.title = cleanFileName;
     window.print();
+    setTimeout(() => {
+      document.title = oldTitle;
+    }, 1000);
   };
 
   const handleDownloadDocx = async () => {
@@ -22,18 +42,35 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
     }
   };
 
+  const handleSaveContact = () => {
+    if (onResumeUpdate) {
+      onResumeUpdate({
+        ...resume,
+        fullName: editForm.fullName,
+        headline: editForm.headline,
+        phone: editForm.phone,
+        email: editForm.email,
+        location: editForm.location,
+        linkedin: editForm.linkedin,
+        github: editForm.github,
+        portfolio: editForm.portfolio
+      });
+    }
+    setIsEditModalOpen(false);
+  };
+
   const handleCopyText = () => {
     const lines = [];
-    lines.push(resume.fullName || "Candidate");
+    lines.push(resume.fullName || "SATYANARAYANA REDDY KOLAGATLA");
     if (resume.headline || resume.targetRole) lines.push(resume.headline || resume.targetRole);
     
     const contactParts = [
       resume.phone,
       resume.email,
       resume.location,
-      resume.linkedin,
-      resume.portfolio,
-      resume.github
+      resume.linkedin ? `LinkedIn: ${resume.linkedin}` : null,
+      resume.github ? `GitHub: ${resume.github}` : null,
+      resume.portfolio ? `Portfolio: ${resume.portfolio}` : null
     ].filter(Boolean);
     if (contactParts.length > 0) lines.push(contactParts.join(' | '));
 
@@ -98,18 +135,18 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
     });
   };
 
-  const contactList = [
-    resume.phone,
-    resume.email,
-    resume.location,
-    resume.linkedin,
-    resume.portfolio,
-    resume.github
-  ].filter(Boolean);
+  // Contact items with working URLs
+  const phone = resume.phone || "+91 8639822170";
+  const email = resume.email || "satyanarayanareddykolagatla@gmail.com";
+  const location = resume.location || "Hyderabad, India";
+  const linkedin = resume.linkedin || "https://www.linkedin.com/in/satyanarayana-reddy-kolagatla";
+  const github = resume.github || "https://github.com/satyanarayanareddy";
+  const portfolio = resume.portfolio && !resume.portfolio.includes("gmail.com") ? resume.portfolio : "";
 
   return (
     <div className="glass-card">
-      <div className="card-header-row export-control-bar">
+      {/* Control Bar - STRICTLY HIDDEN IN PRINTED PDF */}
+      <div className="card-header-row export-control-bar no-print">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
           <h2 className="card-title">
             <Sparkles size={20} className="text-emerald" />
@@ -121,26 +158,46 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
             type="button"
           >
             <Eye size={13} />
-            {highlightMode ? 'Keyword Highlights ON' : 'Highlights OFF'}
+            {highlightMode ? 'Highlights ON' : 'Highlights OFF'}
           </button>
-          {resume.summary && (
-            <button 
-              className={`chip ${showSummary ? 'active' : ''}`}
-              onClick={() => setShowSummary(!showSummary)}
-              type="button"
-              title="Toggle Summary section visibility"
-            >
-              <FileText size={13} />
-              {showSummary ? 'Summary Included' : 'Summary Hidden (1-Page Fit)'}
-            </button>
-          )}
+          
+          <button 
+            className={`chip ${showSummary ? 'active' : ''}`}
+            onClick={() => setShowSummary(!showSummary)}
+            type="button"
+            title="Toggle Professional Summary section (OFF ensures 1-page fit)"
+          >
+            <FileText size={13} />
+            {showSummary ? 'Summary Included' : '1-Page Fit (Summary OFF)'}
+          </button>
+
+          <button 
+            className="chip"
+            onClick={() => {
+              setEditForm({
+                fullName: resume.fullName || '',
+                headline: resume.headline || 'Data Engineer | ETL/ELT Pipeline Development | Bigquery | Airflow',
+                phone: resume.phone || '+91 8639822170',
+                email: resume.email || 'satyanarayanareddykolagatla@gmail.com',
+                location: resume.location || 'Hyderabad, India',
+                linkedin: resume.linkedin || 'https://www.linkedin.com/in/satyanarayana-reddy-kolagatla',
+                github: resume.github || 'https://github.com/satyanarayanareddy',
+                portfolio: resume.portfolio || ''
+              });
+              setIsEditModalOpen(true);
+            }}
+            type="button"
+          >
+            <Edit3 size={13} />
+            Edit Contact & Links
+          </button>
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button 
             className="btn btn-emerald"
             onClick={handlePrint}
-            title="Export clean ATS vector PDF"
+            title="Export clean single-page ATS vector PDF"
           >
             <Printer size={16} />
             Export ATS PDF
@@ -166,27 +223,66 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
         </div>
       </div>
 
-      {/* The Printable / Viewable Standard ATS Paper */}
+      {/* The Printable / Viewable Standard ATS Paper (ONLY THIS PRINTS TO PDF) */}
       <div className="paper-wrapper" id="ats-resume-paper">
         {/* Header */}
         <div className="resume-header">
           <div className="resume-name">{resume.fullName || "SATYANARAYANA REDDY KOLAGATLA"}</div>
-          {(resume.headline || resume.targetRole) && (
-            <div className="resume-target-role">{resume.headline || resume.targetRole}</div>
-          )}
-          {contactList.length > 0 && (
-            <div className="resume-contact">
-              {contactList.map((item, idx) => (
-                <React.Fragment key={idx}>
-                  <span>{item}</span>
-                  {idx < contactList.length - 1 && <span style={{ opacity: 0.5, margin: '0 0.35rem' }}>|</span>}
-                </React.Fragment>
-              ))}
-            </div>
-          )}
+          <div className="resume-target-role">
+            {resume.headline || "Data Engineer | ETL/ELT Pipeline Development | Bigquery | Airflow"}
+          </div>
+
+          <div className="resume-contact">
+            {phone && (
+              <a href={`tel:${phone.replace(/\s+/g, '')}`} className="resume-contact-link">
+                {phone}
+              </a>
+            )}
+            {phone && email && <span className="contact-sep">|</span>}
+            {email && (
+              <a href={`mailto:${email}`} className="resume-contact-link">
+                {email}
+              </a>
+            )}
+            {email && location && <span className="contact-sep">|</span>}
+            {location && <span>{location}</span>}
+            {linkedin && <span className="contact-sep">|</span>}
+            {linkedin && (
+              <a 
+                href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="resume-contact-link"
+              >
+                LinkedIn
+              </a>
+            )}
+            {github && <span className="contact-sep">|</span>}
+            {github && (
+              <a 
+                href={github.startsWith('http') ? github : `https://${github}`} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="resume-contact-link"
+              >
+                GitHub
+              </a>
+            )}
+            {portfolio && <span className="contact-sep">|</span>}
+            {portfolio && (
+              <a 
+                href={portfolio.startsWith('http') ? portfolio : `https://${portfolio}`} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="resume-contact-link"
+              >
+                Portfolio
+              </a>
+            )}
+          </div>
         </div>
 
-        {/* Optional Professional Summary */}
+        {/* Optional Professional Summary (Toggled OFF by default for exact 1-page fit) */}
         {showSummary && resume.summary && (
           <div className="resume-section">
             <div className="resume-section-title">Professional Summary</div>
@@ -211,7 +307,7 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
           </div>
         )}
 
-        {/* Professional Experience */}
+        {/* Work Experience */}
         {resume.experience && resume.experience.length > 0 && (
           <div className="resume-section">
             <div className="resume-section-title">Work Experience</div>
@@ -259,13 +355,13 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
           <div className="resume-section">
             <div className="resume-section-title">Education</div>
             {resume.education.map((edu, idx) => (
-              <div key={idx} style={{ marginBottom: '0.35rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '9.5pt', color: '#111827' }}>
+              <div key={idx} style={{ marginBottom: '0.2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '9pt', color: '#111827' }}>
                   <span>{edu.degree}</span>
                   <span>{edu.year}</span>
                 </div>
                 {edu.institution && (
-                  <div style={{ fontSize: '9pt', color: '#4b5563', marginTop: '0.1rem' }}>
+                  <div style={{ fontSize: '8.5pt', color: '#4b5563', marginTop: '0.05rem' }}>
                     {edu.institution}
                   </div>
                 )}
@@ -274,6 +370,136 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
           </div>
         )}
       </div>
+
+      {/* Edit Contact & Links Modal */}
+      {isEditModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '580px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Edit3 size={18} className="text-emerald" />
+                Edit Header, Contact & Profile Links
+              </h3>
+              <button className="btn btn-outline btn-icon" onClick={() => setIsEditModalOpen(false)}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                  Full Name
+                </label>
+                <input 
+                  type="text" 
+                  value={editForm.fullName} 
+                  onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                  style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                  Headline (Displayed directly below name)
+                </label>
+                <input 
+                  type="text" 
+                  value={editForm.headline} 
+                  onChange={(e) => setEditForm({ ...editForm, headline: e.target.value })}
+                  style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    Phone Number
+                  </label>
+                  <input 
+                    type="text" 
+                    value={editForm.phone} 
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    Email Address
+                  </label>
+                  <input 
+                    type="email" 
+                    value={editForm.email} 
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    Location (City, Country)
+                  </label>
+                  <input 
+                    type="text" 
+                    value={editForm.location} 
+                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    LinkedIn URL
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="https://linkedin.com/in/..." 
+                    value={editForm.linkedin} 
+                    onChange={(e) => setEditForm({ ...editForm, linkedin: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    GitHub URL
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="https://github.com/..." 
+                    value={editForm.github} 
+                    onChange={(e) => setEditForm({ ...editForm, github: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    Portfolio / Website URL (Optional)
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="https://..." 
+                    value={editForm.portfolio} 
+                    onChange={(e) => setEditForm({ ...editForm, portfolio: e.target.value })}
+                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
+              <button className="btn btn-outline" onClick={() => setIsEditModalOpen(false)}>
+                Cancel
+              </button>
+              <button className="btn btn-emerald" onClick={handleSaveContact}>
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

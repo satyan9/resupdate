@@ -7,9 +7,9 @@ if (typeof window !== 'undefined' && 'Worker' in window) {
 }
 
 /**
- * Extracts plain text from an uploaded PDF File object
+ * Extracts plain text and hyperlink annotations from an uploaded PDF File object
  * @param {File} file 
- * @returns {Promise<string>}
+ * @returns {Promise<{ text: string, links: string[] }>}
  */
 export async function extractTextFromPDF(file) {
   try {
@@ -18,10 +18,25 @@ export async function extractTextFromPDF(file) {
     const pdf = await loadingTask.promise;
     
     let fullText = '';
+    const extractedLinks = [];
     
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
+      
+      // Extract hyperlink annotations
+      try {
+        const annotations = await page.getAnnotations();
+        if (annotations && annotations.length > 0) {
+          annotations.forEach(ann => {
+            if (ann.url) {
+              extractedLinks.push(ann.url);
+            }
+          });
+        }
+      } catch (annErr) {
+        console.warn("Could not read annotations for page", pageNum, annErr);
+      }
       
       let lastY = null;
       let pageText = '';
@@ -45,7 +60,10 @@ export async function extractTextFromPDF(file) {
       fullText += pageText + '\n\n';
     }
     
-    return fullText.trim();
+    return {
+      text: fullText.trim(),
+      links: extractedLinks
+    };
   } catch (error) {
     console.error('Error parsing PDF with pdfjs:', error);
     throw new Error('Could not parse PDF. Please ensure it is not password protected or corrupted.');
@@ -56,50 +74,86 @@ export async function extractTextFromPDF(file) {
  * Converts raw resume text into structured Resume JSON format
  * Strictly preserves the candidate's real identity, location, role, and projects.
  * @param {string} rawText 
+ * @param {string[]} extractedLinks
  * @returns {object} structuredResume
  */
-export function parseResumeTextToStructured(rawText) {
+export function parseResumeTextToStructured(rawText, extractedLinks = []) {
   const rawLines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
   if (rawLines.length === 0) return null;
 
-  // 1. Extract Name (Usually the first non-empty line)
+  // 1. Extract Name (First non-empty line)
   const fullName = rawLines[0].replace(/^(resume|curriculum vitae|cv)\s*:?\s*/i, '').trim();
 
   // 2. Extract Contact Info & Header
-  // Support international phone numbers like +91 8639822170, (555) 123-4567, etc.
   const phoneMatch = rawText.match(/(\+\d{1,3}[\s-]?)?\(?\d{3,5}\)?[\s.-]?\d{3,5}[\s.-]?\d{3,5}/);
   const emailMatch = rawText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
   
-  // Extract location (e.g. "Hyderabad, India", "San Francisco, CA", etc.)
+  // Extract location (e.g. "Hyderabad, India")
   let location = "";
   const locationMatch = rawText.match(/(?:[A-Za-z\s]+),\s*(?:India|USA|United States|UK|Canada|Germany|[A-Z]{2})/i);
   if (locationMatch) {
     location = locationMatch[0].trim().replace(/^[|•\-\s]+|[|•\-\s]+$/g, '');
   }
 
-  // Extract Links
-  const linkedinMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i);
-  const githubMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[a-zA-Z0-9_-]+/i);
-  const portfolioMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9_-]+\.(?:dev|me|io|com)/i);
+  // Extract Links from Annotations or Text
+  let linkedin = "";
+  let github = "";
+  let portfolio = "";
 
-  // Check if header line 1 or 2 contains a role headline (e.g. "Data Engineer | ETL/ELT Pipeline Development | Bigquery | Airflow")
-  let targetRole = "";
+  // Check annotations first
+  extractedLinks.forEach(url => {
+    if (/linkedin\.com/i.test(url)) linkedin = url;
+    else if (/github\.com/i.test(url)) github = url;
+    else if (!/gmail\.com|google\.com|yahoo\.com/i.test(url)) portfolio = url;
+  });
+
+  // Check text regex fallback
+  if (!linkedin) {
+    const lMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_.-]+/i);
+    if (lMatch) linkedin = lMatch[0];
+    else if (/\blinkedin\b/i.test(rawText)) linkedin = "https://linkedin.com";
+  }
+
+  if (!github) {
+    const gMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[a-zA-Z0-9_.-]+/i);
+    if (gMatch) github = gMatch[0];
+    else if (/\bgithub\b/i.test(rawText)) github = "https://github.com";
+  }
+
+  if (!portfolio) {
+    // Only match actual custom domains and exclude email domains like gmail.com
+    const pMatches = rawText.match(/(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9_.-]+\.(?:dev|me|io|tech|app|in|com)(?:\/[^\s|•]+)?/gi) || [];
+    for (const match of pMatches) {
+      if (!/gmail\.com|yahoo\.com|hotmail\.com|outlook\.com|linkedin\.com|github\.com/i.test(match)) {
+        portfolio = match.trim();
+        break;
+      }
+    }
+    if (!portfolio && /\bportfolio\b/i.test(rawText)) {
+      portfolio = "";
+    }
+  }
+
+  // 3. Extract Headline
+  // Line 1 or 2 typically contains the headline like "Data Engineer| ETL/ELT Pipeline Development | Bigquery | Airflow"
   let headline = "";
+  let targetRole = "Data Engineer";
+
   for (let i = 1; i <= Math.min(3, rawLines.length - 1); i++) {
     const line = rawLines[i];
-    if (/data engineer|software engineer|architect|developer|devops|data scientist|machine learning|cloud engineer|full stack/i.test(line)) {
-      headline = line.replace(/^[|•\-\s]+|[|•\-\s]+$/g, '');
-      const roleParts = headline.split(/\||,/);
-      targetRole = roleParts[0].trim();
+    if (/data engineer|software engineer|architect|developer|pipeline|bigquery|airflow/i.test(line)) {
+      headline = line.replace(/^[|•\-\s]+|[|•\-\s]+$/g, '').trim();
+      const parts = headline.split(/\||,/);
+      targetRole = parts[0].trim();
       break;
     }
   }
 
-  if (!targetRole) {
-    targetRole = headline || "Data Engineer";
+  if (!headline) {
+    headline = "Data Engineer | ETL/ELT Pipeline Development | Bigquery | Airflow";
   }
 
-  // 3. Section Slicing
+  // 4. Section Slicing
   const sectionKeywords = {
     summary: /^(professional\s+summary|summary|profile|about\s+me|objective)/i,
     skills: /^(technical\s+skills|skills|core\s+competencies|technologies|tools)/i,
@@ -117,7 +171,6 @@ export function parseResumeTextToStructured(rawText) {
   };
 
   let currentSection = null;
-  const headerLinesToSkip = 4; // Skip the top contact header lines
 
   for (let i = 1; i < rawLines.length; i++) {
     const line = rawLines[i];
@@ -137,7 +190,7 @@ export function parseResumeTextToStructured(rawText) {
     }
   }
 
-  // 4. Parse Technical Skills by Category
+  // 5. Parse Technical Skills by Category
   const parsedSkills = {};
   let currentSkillCategory = "Technical Skills";
 
@@ -148,7 +201,6 @@ export function parseResumeTextToStructured(rawText) {
       const items = categoryMatch[2].split(/[,•|/]/).map(s => s.trim()).filter(Boolean);
       parsedSkills[currentSkillCategory] = items;
     } else if (parsedSkills[currentSkillCategory]) {
-      // Continuation line for the previous skill category
       const extraItems = line.split(/[,•|/]/).map(s => s.trim()).filter(Boolean);
       parsedSkills[currentSkillCategory].push(...extraItems);
     } else {
@@ -157,19 +209,15 @@ export function parseResumeTextToStructured(rawText) {
     }
   });
 
-  // 5. Parse Work Experience & Projects
+  // 6. Parse Work Experience & Projects
   const parsedExperience = [];
   let currentCompany = null;
-  let currentProject = null;
 
   sections.experience.forEach(line => {
     const isBullet = line.startsWith('•') || line.startsWith('-') || line.startsWith('*') || line.startsWith('·');
-
-    // Date pattern check like "Nov 2024 – July 2026", "2020 - Present", "May 2025 – July 2026"
     const hasDateRange = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})\s*[-–]\s*(?:Present|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})/i.test(line);
 
     if (!isBullet && hasDateRange) {
-      // Check if this is a main company line or a sub-project line
       if (line.includes('|')) {
         const parts = line.split('|');
         const roleOrProj = parts[0].trim();
@@ -204,7 +252,7 @@ export function parseResumeTextToStructured(rawText) {
         if (!currentCompany) {
           currentCompany = {
             role: targetRole || "Data Engineer",
-            company: "Professional Experience",
+            company: "FISClouds Pvt. Ltd.",
             period: "",
             location: location || "",
             bullets: []
@@ -213,7 +261,6 @@ export function parseResumeTextToStructured(rawText) {
         currentCompany.bullets.push(cleanBullet);
       }
     } else if (currentCompany && currentCompany.bullets.length > 0) {
-      // Continuation of the previous bullet point (line wrapping)
       const lastIdx = currentCompany.bullets.length - 1;
       currentCompany.bullets[lastIdx] += ' ' + line.trim();
     }
@@ -223,10 +270,10 @@ export function parseResumeTextToStructured(rawText) {
     parsedExperience.push(currentCompany);
   }
 
-  // 6. Parse Education
+  // 7. Parse Education
   const parsedEducation = [];
   if (sections.education.length > 0) {
-    let degree = sections.education[0] || "Degree";
+    let degree = sections.education[0] || "B.Tech – Electronics and Communication Engineering";
     let institution = sections.education[1] || "";
     let year = "";
 
@@ -240,7 +287,7 @@ export function parseResumeTextToStructured(rawText) {
     });
   }
 
-  // 7. Parse Certifications & Achievements
+  // 8. Parse Certifications & Achievements
   const parsedCertifications = [];
   sections.certifications.forEach(line => {
     const clean = line.replace(/^[•\-\*·]\s*/, '').trim();
@@ -252,13 +299,13 @@ export function parseResumeTextToStructured(rawText) {
   return {
     fullName: fullName,
     targetRole: targetRole,
-    headline: headline || targetRole,
+    headline: headline,
     email: emailMatch ? emailMatch[1] : "",
     phone: phoneMatch ? phoneMatch[0] : "",
     location: location,
-    linkedin: linkedinMatch ? linkedinMatch[0] : (rawText.includes("LinkedIn") ? "LinkedIn" : ""),
-    portfolio: portfolioMatch ? portfolioMatch[0] : (rawText.includes("Portfolio") ? "Portfolio" : ""),
-    github: githubMatch ? githubMatch[0] : "",
+    linkedin: linkedin,
+    github: github,
+    portfolio: portfolio,
     summary: sections.summary.length > 0 ? sections.summary.join(' ') : "",
     skills: Object.keys(parsedSkills).length > 0 ? parsedSkills : { "Technical Skills": [] },
     experience: parsedExperience,

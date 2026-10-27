@@ -434,6 +434,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  text-decoration: none;
 }
 
 .chip:hover, .chip.active {
@@ -598,85 +599,104 @@ body {
 }
 
 /* ==========================================================
-   ATS Resume Paper (Compact 1-Page Standard Layout)
+   ATS Resume Paper (Exact 1-Page Compact Layout)
    ========================================================== */
 
 .paper-wrapper {
   background: #ffffff;
   color: #111827;
-  padding: 1.75rem 2.25rem;
+  padding: 1.5rem 2rem;
   border-radius: var(--radius-md);
   font-family: var(--font-resume);
   box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.4);
-  line-height: 1.38;
-  font-size: 9pt;
+  line-height: 1.34;
+  font-size: 8.75pt;
   min-height: 700px;
-  max-height: 800px;
+  max-height: 850px;
   overflow-y: auto;
 }
 
 .resume-header {
   text-align: center;
   border-bottom: 1.5px solid #111827;
-  padding-bottom: 0.45rem;
-  margin-bottom: 0.55rem;
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.45rem;
 }
 
 .resume-name {
-  font-size: 15pt;
+  font-size: 14pt;
   font-weight: 800;
   letter-spacing: -0.01em;
   color: #0f172a;
   text-transform: uppercase;
+  line-height: 1.15;
 }
 
 .resume-target-role {
-  font-size: 9.5pt;
-  font-weight: 700;
-  color: #1f2937;
+  font-size: 9pt;
+  font-weight: 600;
+  color: #111827;
   margin-top: 0.1rem;
+  line-height: 1.25;
 }
 
 .resume-contact {
-  font-size: 8.5pt;
-  color: #4b5563;
-  margin-top: 0.2rem;
+  font-size: 8.25pt;
+  color: #374151;
+  margin-top: 0.15rem;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.35rem;
+}
+
+.contact-sep {
+  opacity: 0.4;
+  margin: 0 0.25rem;
+}
+
+.resume-contact-link {
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.resume-contact-link:hover {
+  color: #1d4ed8;
 }
 
 .resume-section {
-  margin-bottom: 0.55rem;
+  margin-bottom: 0.45rem;
 }
 
 .resume-section-title {
-  font-size: 9pt;
+  font-size: 8.75pt;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #0f172a;
   border-bottom: 1px solid #111827;
-  padding-bottom: 0.1rem;
-  margin-bottom: 0.3rem;
+  padding-bottom: 0.08rem;
+  margin-bottom: 0.25rem;
 }
 
 .resume-summary-text {
-  font-size: 9pt;
+  font-size: 8.5pt;
   color: #374151;
   text-align: justify;
+  line-height: 1.3;
 }
 
 .resume-skills-block {
-  font-size: 8.75pt;
+  font-size: 8.5pt;
   color: #1f2937;
 }
 
 .resume-skills-category {
-  margin-bottom: 0.2rem;
-  line-height: 1.35;
+  margin-bottom: 0.15rem;
+  line-height: 1.3;
 }
 
 .resume-skills-label {
@@ -685,7 +705,7 @@ body {
 }
 
 .resume-experience-item {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
 .exp-header-row {
@@ -693,36 +713,36 @@ body {
   justify-content: space-between;
   align-items: baseline;
   font-weight: 700;
-  font-size: 9.5pt;
+  font-size: 9pt;
   color: #111827;
 }
 
 .exp-sub-row {
   display: flex;
   justify-content: space-between;
-  font-size: 8.5pt;
+  font-size: 8.25pt;
   font-style: italic;
   color: #4b5563;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.1rem;
 }
 
 .resume-bullets {
-  padding-left: 1.15rem;
-  margin-top: 0.15rem;
+  padding-left: 1.1rem;
+  margin-top: 0.1rem;
 }
 
 .resume-bullets li {
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.15rem;
   color: #374151;
-  font-size: 8.75pt;
-  line-height: 1.35;
+  font-size: 8.5pt;
+  line-height: 1.3;
 }
 
 /* Diff Mode Highlighting */
 .highlight-injected {
   background-color: rgba(99, 102, 241, 0.15);
   border-bottom: 1.5px solid #6366f1;
-  padding: 0 0.2rem;
+  padding: 0 0.15rem;
   border-radius: 2px;
   font-weight: 600;
   color: #312e81;
@@ -731,7 +751,7 @@ body {
 .highlight-keyword {
   background-color: rgba(16, 185, 129, 0.18);
   border-bottom: 1.5px solid #10b981;
-  padding: 0 0.2rem;
+  padding: 0 0.15rem;
   border-radius: 2px;
   font-weight: 600;
   color: #064e3b;
@@ -756,20 +776,32 @@ body {
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 540px;
-  padding: 1.75rem;
+  padding: 1.5rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
 }
 
-/* Print Stylesheet for True 1-Page ATS PDF Export */
+/* ==========================================================
+   STRICT ATS PDF PRINT STYLESHEET
+   100% ISOLATION: ONLY #ats-resume-paper PRINTS.
+   NO TOP DASHBOARD SECTION, NO BUTTONS, NO TAGS.
+   ========================================================== */
 @media print {
   @page {
     size: letter portrait;
-    margin: 0.35in;
+    margin: 0.3in 0.35in;
   }
-  body {
+
+  html, body {
     background: #ffffff !important;
     color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    font-size: 8.5pt !important;
   }
+
+  /* Completely eliminate ALL app UI and dashboard headers */
+  .no-print,
   .app-header,
   .stepper-nav,
   .action-trigger-bar,
@@ -777,31 +809,94 @@ body {
   .keywords-breakdown-grid,
   .card-header-row,
   .export-control-bar,
-  .modal-overlay {
+  .modal-overlay,
+  .dropzone,
+  .jd-input-box,
+  .chips-row {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
   }
+
   .app-container {
     padding: 0 !important;
+    margin: 0 !important;
     max-width: 100% !important;
   }
-  .paper-wrapper {
+
+  .glass-card {
+    background: transparent !important;
+    border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* ONLY #ats-resume-paper is visible and printed */
+  #ats-resume-paper {
+    display: block !important;
+    visibility: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
     max-height: none !important;
     overflow: visible !important;
-    font-size: 8.5pt !important;
-    line-height: 1.3 !important;
+    font-size: 8.25pt !important;
+    line-height: 1.28 !important;
   }
-  .resume-section {
-    margin-bottom: 0.45rem !important;
-  }
+
   .resume-header {
-    padding-bottom: 0.25rem !important;
+    border-bottom: 1.5px solid #000000 !important;
+    padding-bottom: 0.2rem !important;
+    margin-bottom: 0.3rem !important;
+  }
+
+  .resume-name {
+    font-size: 13pt !important;
+    color: #000000 !important;
+  }
+
+  .resume-target-role {
+    font-size: 8.5pt !important;
+    color: #000000 !important;
+  }
+
+  .resume-contact {
+    font-size: 7.75pt !important;
+    color: #000000 !important;
+  }
+
+  .resume-contact-link {
+    color: #0000ee !important;
+    text-decoration: underline !important;
+  }
+
+  .resume-section {
     margin-bottom: 0.35rem !important;
   }
+
+  .resume-section-title {
+    font-size: 8.25pt !important;
+    border-bottom: 1px solid #000000 !important;
+    color: #000000 !important;
+    padding-bottom: 0.05rem !important;
+    margin-bottom: 0.15rem !important;
+  }
+
+  .resume-bullets li {
+    font-size: 8pt !important;
+    margin-bottom: 0.1rem !important;
+    line-height: 1.26 !important;
+  }
+
   .highlight-injected, .highlight-keyword {
     background: transparent !important;
     border-bottom: none !important;
     color: inherit !important;
+    font-weight: normal !important;
   }
 }

@@ -24,9 +24,9 @@ export default function ResumeDropzone({ resume, setResume, setRawResumeText }) 
     setFileSize((file.size / 1024).toFixed(1) + ' KB');
 
     try {
-      const extractedText = await extractTextFromPDF(file);
-      setRawResumeText(extractedText);
-      const structured = parseResumeTextToStructured(extractedText);
+      const { text, links } = await extractTextFromPDF(file);
+      setRawResumeText(text);
+      const structured = parseResumeTextToStructured(text, links);
       setResume(structured);
     } catch (err) {
       console.error(err);
@@ -54,8 +54,8 @@ export default function ResumeDropzone({ resume, setResume, setRawResumeText }) 
   };
 
   const loadSample = () => {
-    setFileName("alex_rivera_resume.pdf");
-    setFileSize("142 KB (Preloaded)");
+    setFileName("Satyanarayana_Reddy_Kolagatla_Data_Engineer.pdf");
+    setFileSize("128 KB (Preloaded)");
     setResume(SAMPLE_RESUME);
     setRawResumeText(JSON.stringify(SAMPLE_RESUME));
     setErrorMsg(null);
@@ -104,7 +104,7 @@ export default function ResumeDropzone({ resume, setResume, setRawResumeText }) 
             <div className="file-info">
               <div className="file-name">{fileName || `${resume.fullName || 'Candidate'}_Resume.pdf`}</div>
               <div className="file-meta">
-                ✓ Ready • {resume.experience?.length || 0} Jobs • {Object.keys(resume.skills || {}).length} Skill Categories
+                ✓ Ready • {resume.experience?.length || 0} Experience Items • {Object.keys(resume.skills || {}).length} Skill Categories
               </div>
             </div>
             <button 

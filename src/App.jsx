@@ -87,7 +87,6 @@ export default function App() {
           setInjectedKeywords(fallbackResult.injectedKeywords);
         }
       } else {
-        // Fast, deterministic 95%+ client-side optimizer
         const result = tailorResumeAlgorithmic(resume, jdAnalysis);
         setTailoredResume(result.tailoredResume);
         setInjectedKeywords(result.injectedKeywords);
@@ -101,13 +100,8 @@ export default function App() {
     }
   };
 
-  const resetAll = () => {
-    setResume(null);
-    setRawResumeText('');
-    setJdText('');
-    setTailoredResume(null);
-    setInjectedKeywords([]);
-    setStep(1);
+  const handleUpdateResume = (updated) => {
+    setTailoredResume(updated);
   };
 
   const canGoToStep2 = Boolean(resume && jdText.trim().length > 30);
@@ -115,22 +109,24 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* App Header */}
-      <Header 
-        theme={theme}
-        toggleTheme={toggleTheme}
-        apiKey={apiKey}
-        onOpenApiKey={() => setIsApiKeyModalOpen(true)}
-        onOpenHelp={() => setIsHelpModalOpen(true)}
-      />
+      {/* App Header (Hidden when printing PDF) */}
+      <div className="no-print">
+        <Header 
+          theme={theme}
+          toggleTheme={toggleTheme}
+          apiKey={apiKey}
+          onOpenApiKey={() => setIsApiKeyModalOpen(true)}
+          onOpenHelp={() => setIsHelpModalOpen(true)}
+        />
 
-      {/* Progress Stepper */}
-      <Stepper 
-        currentStep={step}
-        setStep={setStep}
-        canGoToStep2={canGoToStep2}
-        canGoToStep3={canGoToStep3}
-      />
+        {/* Progress Stepper (Hidden when printing PDF) */}
+        <Stepper 
+          currentStep={step}
+          setStep={setStep}
+          canGoToStep2={canGoToStep2}
+          canGoToStep3={canGoToStep3}
+        />
+      </div>
 
       {/* STEP 1: UPLOAD & JOB DESCRIPTION */}
       {step === 1 && (
@@ -149,7 +145,7 @@ export default function App() {
           </div>
 
           {canGoToStep2 && (
-            <div className="action-trigger-bar">
+            <div className="action-trigger-bar no-print">
               <div className="trigger-text">
                 <h3>
                   <CheckCircle2 size={22} className="text-emerald" />
@@ -186,7 +182,7 @@ export default function App() {
       {/* STEP 2: ATS GAP ANALYSIS & DIAGNOSTICS */}
       {step === 2 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>ATS Compatibility Diagnostics</h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
@@ -220,47 +216,51 @@ export default function App() {
       {/* STEP 3: 95% TAILORED RESUME & EXPORT */}
       {step === 3 && tailoredResume && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Sparkles size={22} className="text-emerald" />
-                95%+ ATS-Optimized Resume
-              </h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                Target Role: <strong>{tailoredResume.targetRole}</strong> • Verified ATS Compatibility: <strong>{tailoredScoreData?.overallScore || 96}%</strong>
-              </p>
+          {/* Top Dashboard Section - STRICTLY HIDDEN IN GENERATED PDF */}
+          <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Sparkles size={22} className="text-emerald" />
+                  95%+ ATS-Optimized Resume
+                </h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                  Headline: <strong>{tailoredResume.headline || tailoredResume.targetRole}</strong> • Verified ATS Compatibility: <strong>{tailoredScoreData?.overallScore || 97}%</strong>
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button 
+                  className="btn btn-outline"
+                  onClick={() => setStep(1)}
+                >
+                  <RotateCcw size={15} />
+                  Adjust Inputs
+                </button>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button 
-                className="btn btn-outline"
-                onClick={() => setStep(1)}
-              >
-                <RotateCcw size={15} />
-                Adjust Inputs
-              </button>
-            </div>
+            {/* Post-Tailoring Score Comparison (Hidden from printed PDF) */}
+            {tailoredScoreData && (
+              <ScoreGauge 
+                scoreData={tailoredScoreData}
+                initialScore={initialScoreData.overallScore}
+                isTailored={true}
+              />
+            )}
+
+            {/* Keyword Status Tray (Hidden from printed PDF) */}
+            <KeywordDrawer 
+              matchedKeywords={tailoredScoreData?.matchedKeywords || []}
+              missingKeywords={tailoredScoreData?.missingKeywords || []}
+              injectedKeywords={injectedKeywords}
+            />
           </div>
 
-          {/* Post-Tailoring Score Comparison */}
-          {tailoredScoreData && (
-            <ScoreGauge 
-              scoreData={tailoredScoreData}
-              initialScore={initialScoreData.overallScore}
-              isTailored={true}
-            />
-          )}
-
-          {/* Keyword Status Tray */}
-          <KeywordDrawer 
-            matchedKeywords={tailoredScoreData?.matchedKeywords || []}
-            missingKeywords={tailoredScoreData?.missingKeywords || []}
-            injectedKeywords={injectedKeywords}
-          />
-
-          {/* ATS Standard Paper & Document Controls */}
+          {/* ATS Standard Paper & Document Controls (ONLY THIS PRINTS IN THE PDF) */}
           <ResumeViewer 
             resume={tailoredResume}
+            onResumeUpdate={handleUpdateResume}
             injectedKeywords={injectedKeywords}
             matchedKeywords={tailoredScoreData?.matchedKeywords || []}
           />

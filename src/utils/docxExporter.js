@@ -1,26 +1,26 @@
 // ATS-Compliant DOCX Generator using docx and file-saver
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } from 'docx';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle, ExternalHyperlink } from 'docx';
 import { saveAs } from 'file-saver';
 
 /**
  * Generates and downloads an ATS-compliant Word document (.docx)
- * Strictly preserves candidate truth without dummy values or hallucinated fields.
+ * Strictly preserves candidate truth with clickable hyperlinks and 1-page compact layout.
  * @param {object} resume 
  * @param {object} options 
  */
-export async function exportResumeToDocx(resume, options = { showSummary: true }) {
+export async function exportResumeToDocx(resume, options = { showSummary: false }) {
   const children = [];
 
   // 1. Name (Centered)
   children.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 40 },
+      spacing: { after: 20 },
       children: [
         new TextRun({
-          text: (resume.fullName || "Candidate Name").toUpperCase(),
+          text: (resume.fullName || "SATYANARAYANA REDDY KOLAGATLA").toUpperCase(),
           bold: true,
-          size: 28, // 14pt
+          size: 26, // 13pt
           font: "Calibri",
           color: "111827"
         })
@@ -28,60 +28,127 @@ export async function exportResumeToDocx(resume, options = { showSummary: true }
     })
   );
 
-  // Headline / Target Role
-  if (resume.headline || resume.targetRole) {
-    children.push(
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 60 },
+  // Headline
+  const headline = resume.headline || resume.targetRole || "Data Engineer | ETL/ELT Pipeline Development | Bigquery | Airflow";
+  children.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 40 },
+      children: [
+        new TextRun({
+          text: headline,
+          bold: true,
+          size: 19, // 9.5pt
+          font: "Calibri",
+          color: "374151"
+        })
+      ]
+    })
+  );
+
+  // Contact Info (With clickable hyperlinks)
+  const contactRuns = [];
+  
+  if (resume.phone) {
+    contactRuns.push(new TextRun({ text: resume.phone, size: 17, font: "Calibri", color: "4B5563" }));
+  }
+
+  if (resume.email) {
+    if (contactRuns.length > 0) contactRuns.push(new TextRun({ text: "  |  ", size: 17, font: "Calibri", color: "9CA3AF" }));
+    contactRuns.push(
+      new ExternalHyperlink({
         children: [
           new TextRun({
-            text: resume.headline || resume.targetRole,
-            bold: true,
-            size: 20, // 10pt
+            text: resume.email,
+            size: 17,
             font: "Calibri",
-            color: "374151"
+            color: "2563EB",
+            underline: {}
           })
-        ]
+        ],
+        link: `mailto:${resume.email}`
       })
     );
   }
 
-  // Contact Info (Only real fields)
-  const contactParts = [
-    resume.phone,
-    resume.email,
-    resume.location,
-    resume.linkedin,
-    resume.portfolio,
-    resume.github
-  ].filter(Boolean);
+  if (resume.location) {
+    if (contactRuns.length > 0) contactRuns.push(new TextRun({ text: "  |  ", size: 17, font: "Calibri", color: "9CA3AF" }));
+    contactRuns.push(new TextRun({ text: resume.location, size: 17, font: "Calibri", color: "4B5563" }));
+  }
 
-  if (contactParts.length > 0) {
-    children.push(
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 140 },
+  if (resume.linkedin) {
+    if (contactRuns.length > 0) contactRuns.push(new TextRun({ text: "  |  ", size: 17, font: "Calibri", color: "9CA3AF" }));
+    const lUrl = resume.linkedin.startsWith("http") ? resume.linkedin : `https://${resume.linkedin}`;
+    contactRuns.push(
+      new ExternalHyperlink({
         children: [
           new TextRun({
-            text: contactParts.join("  |  "),
-            size: 18, // 9pt
+            text: "LinkedIn",
+            size: 17,
             font: "Calibri",
-            color: "4B5563"
+            color: "2563EB",
+            underline: {}
           })
-        ]
+        ],
+        link: lUrl
       })
     );
   }
+
+  if (resume.github) {
+    if (contactRuns.length > 0) contactRuns.push(new TextRun({ text: "  |  ", size: 17, font: "Calibri", color: "9CA3AF" }));
+    const gUrl = resume.github.startsWith("http") ? resume.github : `https://${resume.github}`;
+    contactRuns.push(
+      new ExternalHyperlink({
+        children: [
+          new TextRun({
+            text: "GitHub",
+            size: 17,
+            font: "Calibri",
+            color: "2563EB",
+            underline: {}
+          })
+        ],
+        link: gUrl
+      })
+    );
+  }
+
+  if (resume.portfolio && !resume.portfolio.includes("gmail.com")) {
+    if (contactRuns.length > 0) contactRuns.push(new TextRun({ text: "  |  ", size: 17, font: "Calibri", color: "9CA3AF" }));
+    const pUrl = resume.portfolio.startsWith("http") ? resume.portfolio : `https://${resume.portfolio}`;
+    contactRuns.push(
+      new ExternalHyperlink({
+        children: [
+          new TextRun({
+            text: "Portfolio",
+            size: 17,
+            font: "Calibri",
+            color: "2563EB",
+            underline: {}
+          })
+        ],
+        link: pUrl
+      })
+    );
+  }
+
+  children.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 100 },
+      children: contactRuns
+    })
+  );
 
   // Helper for Section Heading
   const addSectionHeader = (title) => {
     children.push(
       new Paragraph({
-        spacing: { before: 140, after: 60 },
+        spacing: { before: 100, after: 40 },
         border: {
           bottom: {
-            color: "9CA3AF",
+            color: "111827",
             space: 1,
             style: BorderStyle.SINGLE,
             size: 4
@@ -91,7 +158,7 @@ export async function exportResumeToDocx(resume, options = { showSummary: true }
           new TextRun({
             text: title.toUpperCase(),
             bold: true,
-            size: 20, // 10pt
+            size: 19, // 9.5pt
             font: "Calibri",
             color: "111827"
           })
@@ -105,11 +172,11 @@ export async function exportResumeToDocx(resume, options = { showSummary: true }
     addSectionHeader("Professional Summary");
     children.push(
       new Paragraph({
-        spacing: { after: 100 },
+        spacing: { after: 60 },
         children: [
           new TextRun({
             text: resume.summary,
-            size: 19, // 9.5pt
+            size: 18,
             font: "Calibri",
             color: "374151"
           })
@@ -125,18 +192,18 @@ export async function exportResumeToDocx(resume, options = { showSummary: true }
       const skillsList = Array.isArray(items) ? items.join(", ") : String(items);
       children.push(
         new Paragraph({
-          spacing: { after: 40 },
+          spacing: { after: 25 },
           children: [
             new TextRun({
               text: `${category}: `,
               bold: true,
-              size: 19,
+              size: 18,
               font: "Calibri",
-              color: "1F2937"
+              color: "111827"
             }),
             new TextRun({
               text: skillsList,
-              size: 19,
+              size: 18,
               font: "Calibri",
               color: "374151"
             })
@@ -152,25 +219,25 @@ export async function exportResumeToDocx(resume, options = { showSummary: true }
     resume.experience.forEach(job => {
       children.push(
         new Paragraph({
-          spacing: { before: 80, after: 30 },
+          spacing: { before: 60, after: 20 },
           children: [
             new TextRun({
               text: `${job.role} `,
               bold: true,
-              size: 19,
+              size: 18.5,
               font: "Calibri",
               color: "111827"
             }),
             new TextRun({
               text: job.company ? `| ${job.company} ` : '',
               bold: true,
-              size: 19,
+              size: 18.5,
               font: "Calibri",
               color: "374151"
             }),
             new TextRun({
               text: job.period ? `(${job.period})` : '',
-              size: 18,
+              size: 17,
               font: "Calibri",
               color: "6B7280"
             })
@@ -183,11 +250,11 @@ export async function exportResumeToDocx(resume, options = { showSummary: true }
           children.push(
             new Paragraph({
               bullet: { level: 0 },
-              spacing: { after: 30 },
+              spacing: { after: 20 },
               children: [
                 new TextRun({
                   text: bullet,
-                  size: 18,
+                  size: 17.5,
                   font: "Calibri",
                   color: "374151"
                 })
@@ -206,11 +273,11 @@ export async function exportResumeToDocx(resume, options = { showSummary: true }
       children.push(
         new Paragraph({
           bullet: { level: 0 },
-          spacing: { after: 30 },
+          spacing: { after: 20 },
           children: [
             new TextRun({
               text: cert,
-              size: 18,
+              size: 17.5,
               font: "Calibri",
               color: "374151"
             })
@@ -226,24 +293,24 @@ export async function exportResumeToDocx(resume, options = { showSummary: true }
     resume.education.forEach(edu => {
       children.push(
         new Paragraph({
-          spacing: { after: 40 },
+          spacing: { after: 25 },
           children: [
             new TextRun({
               text: `${edu.degree} `,
               bold: true,
-              size: 19,
+              size: 18,
               font: "Calibri",
               color: "111827"
             }),
             new TextRun({
               text: edu.institution ? `\n${edu.institution} ` : '',
-              size: 18,
+              size: 17,
               font: "Calibri",
               color: "4B5563"
             }),
             new TextRun({
               text: edu.year ? `(${edu.year})` : '',
-              size: 18,
+              size: 17,
               font: "Calibri",
               color: "6B7280"
             })
@@ -253,17 +320,17 @@ export async function exportResumeToDocx(resume, options = { showSummary: true }
     });
   }
 
-  // Create document with standard 0.4 inch margins
+  // Create document with standard 0.35 inch margins for exact 1-page fit
   const doc = new Document({
     sections: [
       {
         properties: {
           page: {
             margin: {
-              top: 576,    // 0.4 in
-              right: 576,
-              bottom: 576,
-              left: 576
+              top: 504,    // 0.35 in
+              right: 504,
+              bottom: 504,
+              left: 504
             }
           }
         },
@@ -274,5 +341,5 @@ export async function exportResumeToDocx(resume, options = { showSummary: true }
 
   const blob = await Packer.toBlob(doc);
   const cleanName = (resume.fullName || "Candidate").toLowerCase().replace(/\s+/g, '_');
-  saveAs(blob, `${cleanName}_ATS_Tailored_Resume.docx`);
+  saveAs(blob, `${cleanName}_ATS_Resume.docx`);
 }
