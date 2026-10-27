@@ -605,12 +605,12 @@ body {
 .paper-wrapper {
   background: #ffffff;
   color: #111827;
-  padding: 1.25rem 1.65rem;
+  padding: 1.5rem 1.8rem;
   border-radius: var(--radius-md);
   font-family: var(--font-resume);
   box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.4);
-  line-height: 1.22;
-  font-size: 8.3pt;
+  line-height: 1.30;
+  font-size: 9.2pt;
   min-height: auto;
   max-height: none;
   overflow: visible;
@@ -619,44 +619,44 @@ body {
 .resume-header {
   text-align: center;
   border-bottom: 1.5px solid #111827;
-  padding-bottom: 0.14rem;
-  margin-bottom: 0.18rem;
+  padding-bottom: 0.18rem;
+  margin-bottom: 0.22rem;
 }
 
 .resume-name {
-  font-size: 13.5pt;
+  font-size: 15.5pt;
   font-weight: 800;
   letter-spacing: -0.01em;
   color: #0f172a;
   text-transform: uppercase;
   line-height: 1.12;
-  margin-bottom: 0.04rem;
+  margin-bottom: 0.05rem;
 }
 
 .resume-target-role {
-  font-size: 8.85pt;
+  font-size: 10pt;
   font-weight: 600;
   color: #111827;
   margin-top: 0.04rem;
-  margin-bottom: 0.04rem;
+  margin-bottom: 0.05rem;
   line-height: 1.18;
 }
 
 .resume-contact {
-  font-size: 7.9pt;
+  font-size: 9.0pt;
   color: #374151;
-  margin-top: 0.04rem;
+  margin-top: 0.05rem;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.22rem;
-  line-height: 1.15;
+  gap: 0.26rem;
+  line-height: 1.20;
 }
 
 .contact-sep {
   opacity: 0.4;
-  margin: 0 0.18rem;
+  margin: 0 0.2rem;
 }
 
 .resume-contact-link {
@@ -671,38 +671,38 @@ body {
 }
 
 .resume-section {
-  margin-bottom: 0.20rem;
+  margin-bottom: 0.26rem;
 }
 
 .resume-section-title {
-  font-size: 8.45pt;
+  font-size: 10.2pt;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: #0f172a;
-  border-bottom: 1.2px solid #111827;
-  padding-bottom: 0.02rem;
-  margin-bottom: 0.08rem;
-  margin-top: 0.12rem;
+  border-bottom: 1.3px solid #111827;
+  padding-bottom: 0.03rem;
+  margin-bottom: 0.12rem;
+  margin-top: 0.18rem;
 }
 
 .resume-summary-text {
-  font-size: 8.2pt;
+  font-size: 9.2pt;
   color: #1f2937;
   text-align: justify;
-  line-height: 1.22;
+  line-height: 1.30;
   margin: 0;
 }
 
 .resume-skills-block {
-  font-size: 8.15pt;
+  font-size: 9.2pt;
   color: #1f2937;
-  line-height: 1.21;
+  line-height: 1.28;
 }
 
 .resume-skills-category {
-  margin-bottom: 0.05rem;
-  line-height: 1.21;
+  margin-bottom: 0.07rem;
+  line-height: 1.28;
 }
 
 .resume-skills-label {
@@ -711,7 +711,7 @@ body {
 }
 
 .resume-experience-item {
-  margin-bottom: 0.18rem;
+  margin-bottom: 0.22rem;
 }
 
 .exp-header-row {
@@ -719,32 +719,32 @@ body {
   justify-content: space-between;
   align-items: baseline;
   font-weight: 700;
-  font-size: 8.35pt;
+  font-size: 9.7pt;
   color: #111827;
-  line-height: 1.18;
+  line-height: 1.20;
 }
 
 .exp-sub-row {
   display: flex;
   justify-content: space-between;
-  font-size: 7.65pt;
+  font-size: 8.5pt;
   font-style: italic;
   color: #4b5563;
-  margin-bottom: 0.03rem;
-  line-height: 1.15;
+  margin-bottom: 0.04rem;
+  line-height: 1.16;
 }
 
 .resume-bullets {
-  padding-left: 0.95rem;
-  margin-top: 0.03rem;
+  padding-left: 1rem;
+  margin-top: 0.04rem;
   margin-bottom: 0;
 }
 
 .resume-bullets li {
-  margin-bottom: 0.05rem;
+  margin-bottom: 0.07rem;
   color: #1f2937;
-  font-size: 8.15pt;
-  line-height: 1.22;
+  font-size: 9.2pt;
+  line-height: 1.30;
 }
 
 .resume-education-item {
@@ -756,16 +756,16 @@ body {
   justify-content: space-between;
   align-items: baseline;
   font-weight: 700;
-  font-size: 8.35pt;
+  font-size: 9.7pt;
   color: #111827;
-  line-height: 1.18;
+  line-height: 1.20;
 }
 
 .edu-sub-row {
-  font-size: 7.85pt;
+  font-size: 9pt;
   color: #4b5563;
-  margin-top: 0.02rem;
-  line-height: 1.15;
+  margin-top: 0.03rem;
+  line-height: 1.18;
 }
 
 /* Diff Mode Highlighting */
@@ -818,7 +818,7 @@ body {
 @media print {
   @page {
     size: letter portrait;
-    margin: 0.28in 0.35in 0.25in 0.35in;
+    margin: 0.32in 0.40in 0.28in 0.40in;
   }
 
   html, body {
@@ -830,8 +830,8 @@ body {
     height: auto !important;
     min-height: auto !important;
     max-height: none !important;
-    font-size: 8.2pt !important;
-    line-height: 1.21 !important;
+    font-size: 9.2pt !important;
+    line-height: 1.30 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -883,8 +883,8 @@ body {
     height: auto !important;
     max-height: none !important;
     overflow: visible !important;
-    font-size: 8.2pt !important;
-    line-height: 1.21 !important;
+    font-size: 9.2pt !important;
+    line-height: 1.30 !important;
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
     break-after: avoid !important;
@@ -893,30 +893,34 @@ body {
 
   .resume-header {
     border-bottom: 1.5px solid #000000 !important;
-    padding-bottom: 0.12rem !important;
-    margin-bottom: 0.16rem !important;
+    padding-bottom: 0.16rem !important;
+    margin-bottom: 0.20rem !important;
   }
 
   .resume-name {
-    font-size: 13pt !important;
+    font-size: 15.5pt !important;
+    font-weight: 800 !important;
     color: #000000 !important;
-    line-height: 1.10 !important;
-    margin-bottom: 0.04rem !important;
+    line-height: 1.12 !important;
+    margin-bottom: 0.05rem !important;
+    text-transform: uppercase !important;
   }
 
   .resume-target-role {
-    font-size: 8.75pt !important;
+    font-size: 10pt !important;
+    font-weight: 600 !important;
     color: #000000 !important;
-    margin-top: 0.03rem !important;
-    margin-bottom: 0.04rem !important;
-    line-height: 1.16 !important;
+    margin-top: 0.04rem !important;
+    margin-bottom: 0.05rem !important;
+    line-height: 1.18 !important;
   }
 
   .resume-contact {
-    font-size: 7.7pt !important;
+    font-size: 9.0pt !important;
     color: #000000 !important;
-    margin-top: 0.03rem !important;
-    gap: 0.18rem !important;
+    margin-top: 0.04rem !important;
+    gap: 0.22rem !important;
+    line-height: 1.20 !important;
   }
 
   .resume-contact-link {
@@ -925,68 +929,77 @@ body {
   }
 
   .resume-section {
-    margin-bottom: 0.18rem !important;
+    margin-bottom: 0.24rem !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
   .resume-section-title {
-    font-size: 8.35pt !important;
-    border-bottom: 1px solid #000000 !important;
+    font-size: 10.2pt !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.05em !important;
+    text-transform: uppercase !important;
+    border-bottom: 1.3px solid #000000 !important;
     color: #000000 !important;
-    padding-bottom: 0.02rem !important;
-    margin-bottom: 0.06rem !important;
-    margin-top: 0.10rem !important;
+    padding-bottom: 0.03rem !important;
+    margin-bottom: 0.10rem !important;
+    margin-top: 0.16rem !important;
   }
 
   .resume-summary-text {
-    font-size: 8.15pt !important;
-    line-height: 1.21 !important;
+    font-size: 9.2pt !important;
+    line-height: 1.30 !important;
     color: #000000 !important;
     text-align: justify !important;
     margin: 0 !important;
   }
 
   .resume-skills-block {
-    font-size: 8.05pt !important;
-    line-height: 1.20 !important;
+    font-size: 9.2pt !important;
+    line-height: 1.28 !important;
     color: #000000 !important;
   }
 
   .resume-skills-category {
-    margin-bottom: 0.04rem !important;
-    line-height: 1.20 !important;
+    margin-bottom: 0.06rem !important;
+    line-height: 1.28 !important;
+  }
+
+  .resume-skills-label {
+    font-weight: 700 !important;
+    color: #000000 !important;
   }
 
   .resume-experience-item {
-    margin-bottom: 0.16rem !important;
+    margin-bottom: 0.20rem !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
   .exp-header-row {
-    font-size: 8.25pt !important;
-    line-height: 1.15 !important;
+    font-size: 9.7pt !important;
+    font-weight: 700 !important;
+    line-height: 1.20 !important;
     color: #000000 !important;
   }
 
   .exp-sub-row {
-    font-size: 7.55pt !important;
+    font-size: 8.5pt !important;
     color: #333333 !important;
-    margin-bottom: 0.02rem !important;
-    line-height: 1.14 !important;
+    margin-bottom: 0.03rem !important;
+    line-height: 1.16 !important;
   }
 
   .resume-bullets {
-    padding-left: 0.95rem !important;
-    margin-top: 0.02rem !important;
+    padding-left: 1rem !important;
+    margin-top: 0.03rem !important;
     margin-bottom: 0 !important;
   }
 
   .resume-bullets li {
-    font-size: 8.1pt !important;
-    margin-bottom: 0.04rem !important;
-    line-height: 1.20 !important;
+    font-size: 9.2pt !important;
+    margin-bottom: 0.06rem !important;
+    line-height: 1.29 !important;
     color: #000000 !important;
   }
 
@@ -995,16 +1008,17 @@ body {
   }
 
   .edu-header-row {
-    font-size: 8.25pt !important;
-    line-height: 1.15 !important;
+    font-size: 9.7pt !important;
+    font-weight: 700 !important;
+    line-height: 1.20 !important;
     color: #000000 !important;
   }
 
   .edu-sub-row {
-    font-size: 7.65pt !important;
+    font-size: 8.9pt !important;
     color: #333333 !important;
     margin-top: 0.02rem !important;
-    line-height: 1.14 !important;
+    line-height: 1.18 !important;
   }
 
   .highlight-injected, .highlight-keyword {
