@@ -4,8 +4,6 @@ import { exportResumeToDocx } from '../utils/docxExporter';
 
 export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords = [], matchedKeywords = [] }) {
   const [highlightMode, setHighlightMode] = useState(true);
-  // Default to false if original resume had no summary, guaranteeing 1-page fit
-  const [showSummary, setShowSummary] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -13,6 +11,7 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
   const [editForm, setEditForm] = useState({
     fullName: resume?.fullName || '',
     headline: resume?.headline || 'Data Engineer | ETL/ELT Pipeline Development | Bigquery | Airflow',
+    summary: resume?.summary || '',
     phone: resume?.phone || '+91 8639822170',
     email: resume?.email || 'satyanarayanareddykolagatla@gmail.com',
     location: resume?.location || 'Hyderabad, India',
@@ -35,7 +34,7 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
 
   const handleDownloadDocx = async () => {
     try {
-      await exportResumeToDocx(resume, { showSummary });
+      await exportResumeToDocx(resume, { showSummary: true });
     } catch (e) {
       console.error("DOCX generation error:", e);
       alert("Error generating Word document. Please try Export ATS PDF instead.");
@@ -48,6 +47,7 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
         ...resume,
         fullName: editForm.fullName,
         headline: editForm.headline,
+        summary: editForm.summary,
         phone: editForm.phone,
         email: editForm.email,
         location: editForm.location,
@@ -74,7 +74,7 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
     ].filter(Boolean);
     if (contactParts.length > 0) lines.push(contactParts.join(' | '));
 
-    if (showSummary && resume.summary) {
+    if (resume.summary) {
       lines.push("\nPROFESSIONAL SUMMARY");
       lines.push(resume.summary);
     }
@@ -162,21 +162,12 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
           </button>
           
           <button 
-            className={`chip ${showSummary ? 'active' : ''}`}
-            onClick={() => setShowSummary(!showSummary)}
-            type="button"
-            title="Toggle Professional Summary section (OFF ensures 1-page fit)"
-          >
-            <FileText size={13} />
-            {showSummary ? 'Summary Included' : '1-Page Fit (Summary OFF)'}
-          </button>
-
-          <button 
             className="chip"
             onClick={() => {
               setEditForm({
                 fullName: resume.fullName || '',
                 headline: resume.headline || 'Data Engineer | ETL/ELT Pipeline Development | Bigquery | Airflow',
+                summary: resume.summary || '',
                 phone: resume.phone || '+91 8639822170',
                 email: resume.email || 'satyanarayanareddykolagatla@gmail.com',
                 location: resume.location || 'Hyderabad, India',
@@ -189,7 +180,7 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
             type="button"
           >
             <Edit3 size={13} />
-            Edit Contact & Links
+            Edit Header & Summary
           </button>
         </div>
 
@@ -282,8 +273,8 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
           </div>
         </div>
 
-        {/* Optional Professional Summary (Toggled OFF by default for exact 1-page fit) */}
-        {showSummary && resume.summary && (
+        {/* Professional Summary */}
+        {resume.summary && (
           <div className="resume-section">
             <div className="resume-section-title">Professional Summary</div>
             <p className="resume-summary-text">
@@ -407,6 +398,19 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
                   value={editForm.headline} 
                   onChange={(e) => setEditForm({ ...editForm, headline: e.target.value })}
                   style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                  Professional Summary
+                </label>
+                <textarea 
+                  rows={3}
+                  value={editForm.summary} 
+                  onChange={(e) => setEditForm({ ...editForm, summary: e.target.value })}
+                  style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)', fontSize: '0.85rem', resize: 'vertical' }}
+                  placeholder="Enter a 2-3 sentence impactful professional summary..."
                 />
               </div>
 

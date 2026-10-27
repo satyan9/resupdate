@@ -10,7 +10,7 @@ export const SAMPLE_RESUME = {
   linkedin: "https://www.linkedin.com/in/satyanarayana-reddy-kolagatla",
   github: "https://github.com/satyanarayanareddy",
   portfolio: "",
-  summary: "", // Original resume has no summary to fit on 1 page
+  summary: "Results-driven Data Engineer with expertise in architecting scalable ETL/ELT pipelines, BigQuery cloud data warehousing, Apache Airflow (Cloud Composer), and Python data frameworks. Proven track record optimizing query performance by 85%, implementing Dataplex data governance, and orchestrating robust cloud data platforms across enterprise ecosystems.",
   skills: {
     "Cloud (GCP)": ["BigQuery", "Cloud Storage", "Cloud Composer (Airflow)", "Data Fusion (ETL)", "Cloud KMS (Secret Management)", "Dataproc", "Dataflow", "Pub/Sub", "Apache Beam", "Dataplex", "Cloud Build", "Cloud Run", "Cloud Scheduler", "Cloud Monitoring", "Cloud Logging", "Artifact Registry", "Cloud IAM", "Discovery Engine (Vertex AI Search)"],
     "Languages / DBs": ["Python", "PySpark", "SQL", "Apache Spark"],

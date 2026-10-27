@@ -8,7 +8,7 @@ import { saveAs } from 'file-saver';
  * @param {object} resume 
  * @param {object} options 
  */
-export async function exportResumeToDocx(resume, options = { showSummary: false }) {
+export async function exportResumeToDocx(resume, options = { showSummary: true }) {
   const children = [];
 
   // 1. Name (Centered)
@@ -167,8 +167,8 @@ export async function exportResumeToDocx(resume, options = { showSummary: false 
     );
   };
 
-  // 2. Summary (Optional)
-  if (options.showSummary && resume.summary && resume.summary.trim().length > 0) {
+  // 2. Professional Summary
+  if (options.showSummary !== false && resume.summary && resume.summary.trim().length > 0) {
     addSectionHeader("Professional Summary");
     children.push(
       new Paragraph({

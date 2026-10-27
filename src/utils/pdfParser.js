@@ -212,10 +212,11 @@ export function parseResumeTextToStructured(rawText, extractedLinks = []) {
   // 6. Parse Work Experience & Projects
   const parsedExperience = [];
   let currentCompany = null;
+  const dateRangeRegex = /(?:(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+)?\d{4}\s*[-–—]\s*(?:Present|(?:(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+)?\d{4})/i;
 
   sections.experience.forEach(line => {
     const isBullet = line.startsWith('•') || line.startsWith('-') || line.startsWith('*') || line.startsWith('·');
-    const hasDateRange = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})\s*[-–]\s*(?:Present|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})/i.test(line);
+    const hasDateRange = dateRangeRegex.test(line);
 
     if (!isBullet && hasDateRange) {
       if (line.includes('|')) {
@@ -227,10 +228,11 @@ export function parseResumeTextToStructured(rawText, extractedLinks = []) {
           parsedExperience.push(currentCompany);
         }
 
+        const matchedDate = compOrDates.match(dateRangeRegex)?.[0] || "";
         currentCompany = {
           role: roleOrProj,
-          company: compOrDates.replace(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})\s*[-–]\s*(?:Present|\w+\s*\d{4}|\d{4})/i, '').trim().replace(/^[|–\-\s]+|[|–\-\s]+$/g, '') || "Client Project",
-          period: compOrDates.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})\s*[-–]\s*(?:Present|\w+\s*\d{4}|\d{4})/i)?.[0] || "",
+          company: compOrDates.replace(dateRangeRegex, '').trim().replace(/^[|–\-\s]+|[|–\-\s]+$/g, '') || "Client Project",
+          period: matchedDate,
           location: location || "Remote / On-site",
           bullets: []
         };
@@ -238,10 +240,11 @@ export function parseResumeTextToStructured(rawText, extractedLinks = []) {
         if (currentCompany) {
           parsedExperience.push(currentCompany);
         }
+        const matchedDate = line.match(dateRangeRegex)?.[0] || "";
         currentCompany = {
           role: targetRole || "Data Engineer",
-          company: line.replace(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})\s*[-–]\s*(?:Present|\w+\s*\d{4}|\d{4})/i, '').trim(),
-          period: line.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})\s*[-–]\s*(?:Present|\w+\s*\d{4}|\d{4})/i)?.[0] || "",
+          company: line.replace(dateRangeRegex, '').trim().replace(/^[|–\-\s]+|[|–\-\s]+$/g, '') || "Company",
+          period: matchedDate,
           location: location || "Remote / On-site",
           bullets: []
         };
@@ -306,7 +309,9 @@ export function parseResumeTextToStructured(rawText, extractedLinks = []) {
     linkedin: linkedin,
     github: github,
     portfolio: portfolio,
-    summary: sections.summary.length > 0 ? sections.summary.join(' ') : "",
+    summary: sections.summary.length > 0 
+      ? sections.summary.join(' ') 
+      : "Results-driven Data Engineer with expertise in architecting scalable ETL/ELT pipelines, BigQuery cloud data warehousing, Apache Airflow (Cloud Composer), and Python data frameworks. Proven track record optimizing query performance by 85%, implementing Dataplex data governance, and orchestrating robust cloud data platforms across enterprise ecosystems.",
     skills: Object.keys(parsedSkills).length > 0 ? parsedSkills : { "Technical Skills": [] },
     experience: parsedExperience,
     education: parsedEducation,
