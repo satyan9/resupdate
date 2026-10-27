@@ -2,6 +2,46 @@ import React, { useState } from 'react';
 import { Download, FileDown, Copy, Check, Eye, Sparkles, Printer, FileText, Link, Edit3, X } from 'lucide-react';
 import { exportResumeToDocx } from '../utils/docxExporter';
 
+// Data normalization and text artifact cleaning helpers
+function cleanText(str) {
+  if (!str || typeof str !== 'string') return str || '';
+  return str
+    .replace(/\b(19\d|20\d)\s+(\d)\b/g, '$1$2')
+    .replace(/\b([a-zA-Z0-9]+)\s+[-–—]\s+([a-zA-Z0-9]+)\b/g, '$1-$2')
+    .replace(/\s+([,.:;!?])/g, '$1')
+    .replace(/\s*\.?\s*link\s*$/i, '')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
+}
+
+function sanitizeJob(job) {
+  if (!job) return job;
+  let company = cleanText(job.company);
+  let period = cleanText(job.period);
+  let role = cleanText(job.role);
+  let location = cleanText(job.location);
+
+  // If company ends with month (e.g. "Banking Client – Financial Sector May" or "Telecom Client Nov")
+  const monthMatch = company.match(/\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)$/i);
+  if (monthMatch) {
+    company = company.replace(/\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)$/i, '').trim();
+    if (!period.toLowerCase().includes(monthMatch[1].toLowerCase())) {
+      period = `${monthMatch[1]} ${period}`.trim();
+    }
+  }
+
+  const roleMatch = role.match(/\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)$/i);
+  if (roleMatch) {
+    role = role.replace(/\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)$/i, '').trim();
+    if (!period.toLowerCase().includes(roleMatch[1].toLowerCase())) {
+      period = `${roleMatch[1]} ${period}`.trim();
+    }
+  }
+
+  const bullets = (job.bullets || []).map(b => cleanText(b));
+  return { ...job, company, role, period, location, bullets };
+}
+
 export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords = [], matchedKeywords = [] }) {
   const [highlightMode, setHighlightMode] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -22,9 +62,25 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
 
   if (!resume) return null;
 
+  // Real-time sanitized data to fix stray spaces, broken years, attached months, and ". link"
+  const sanitizedExperience = (resume.experience || []).map(sanitizeJob);
+  const sanitizedCertifications = (resume.certifications || []).map(cleanText);
+  const sanitizedSummary = cleanText(resume.summary || '');
+  const sanitizedSkills = {};
+  if (resume.skills) {
+    for (const [cat, skList] of Object.entries(resume.skills)) {
+      const cleanedCat = cleanText(cat);
+      if (Array.isArray(skList)) {
+        sanitizedSkills[cleanedCat] = skList.map(cleanText);
+      } else {
+        sanitizedSkills[cleanedCat] = cleanText(String(skList));
+      }
+    }
+  }
+
   const handlePrint = () => {
     const oldTitle = document.title;
-    const cleanFileName = (resume.fullName || "Candidate").replace(/\s+/g, '_') + '_ATS_Resume';
+    const cleanFileName = (cleanText(resume.fullName) || "Candidate").replace(/\s+/g, '_') + '_ATS_Resume';
     document.title = cleanFileName;
     window.print();
     setTimeout(() => {
@@ -34,7 +90,14 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
 
   const handleDownloadDocx = async () => {
     try {
-      await exportResumeToDocx(resume, { showSummary: true });
+      const cleanResume = {
+        ...resume,
+        summary: sanitizedSummary,
+        skills: sanitizedSkills,
+        experience: sanitizedExperience,
+        certifications: sanitizedCertifications
+      };
+      await exportResumeToDocx(cleanResume, { showSummary: true });
     } catch (e) {
       console.error("DOCX generation error:", e);
       alert("Error generating Word document. Please try Export ATS PDF instead.");
@@ -45,15 +108,15 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
     if (onResumeUpdate) {
       onResumeUpdate({
         ...resume,
-        fullName: editForm.fullName,
-        headline: editForm.headline,
-        summary: editForm.summary,
-        phone: editForm.phone,
-        email: editForm.email,
-        location: editForm.location,
-        linkedin: editForm.linkedin,
-        github: editForm.github,
-        portfolio: editForm.portfolio
+        fullName: cleanText(editForm.fullName),
+        headline: cleanText(editForm.headline),
+        summary: cleanText(editForm.summary),
+        phone: cleanText(editForm.phone),
+        email: cleanText(editForm.email),
+        location: cleanText(editForm.location),
+        linkedin: editForm.linkedin.trim(),
+        github: editForm.github.trim(),
+        portfolio: editForm.portfolio.trim()
       });
     }
     setIsEditModalOpen(false);
@@ -61,8 +124,8 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
 
   const handleCopyText = () => {
     const lines = [];
-    lines.push(resume.fullName || "SATYANARAYANA REDDY KOLAGATLA");
-    if (resume.headline || resume.targetRole) lines.push(resume.headline || resume.targetRole);
+    lines.push(cleanText(resume.fullName) || "SATYANARAYANA REDDY KOLAGATLA");
+    if (resume.headline || resume.targetRole) lines.push(cleanText(resume.headline || resume.targetRole));
     
     const contactParts = [
       resume.phone,
@@ -74,35 +137,35 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
     ].filter(Boolean);
     if (contactParts.length > 0) lines.push(contactParts.join(' | '));
 
-    if (resume.summary) {
+    if (sanitizedSummary) {
       lines.push("\nPROFESSIONAL SUMMARY");
-      lines.push(resume.summary);
+      lines.push(sanitizedSummary);
     }
 
-    if (resume.skills && Object.keys(resume.skills).length > 0) {
+    if (Object.keys(sanitizedSkills).length > 0) {
       lines.push("\nTECHNICAL SKILLS");
-      for (const [cat, sk] of Object.entries(resume.skills)) {
+      for (const [cat, sk] of Object.entries(sanitizedSkills)) {
         lines.push(`${cat}: ${Array.isArray(sk) ? sk.join(', ') : sk}`);
       }
     }
 
-    if (resume.experience && resume.experience.length > 0) {
+    if (sanitizedExperience.length > 0) {
       lines.push("\nWORK EXPERIENCE");
-      resume.experience.forEach(exp => {
+      sanitizedExperience.forEach(exp => {
         lines.push(`\n${exp.role || ''} | ${exp.company || ''} ${exp.period ? `${exp.period}` : ''}`);
         if (exp.bullets) exp.bullets.forEach(b => lines.push(`• ${b}`));
       });
     }
 
-    if (resume.certifications && resume.certifications.length > 0) {
+    if (sanitizedCertifications.length > 0) {
       lines.push("\nCERTIFICATIONS & ACHIEVEMENTS");
-      resume.certifications.forEach(cert => lines.push(`• ${cert}`));
+      sanitizedCertifications.forEach(cert => lines.push(`• ${cert}`));
     }
 
     if (resume.education && resume.education.length > 0) {
       lines.push("\nEDUCATION");
       resume.education.forEach(ed => {
-        lines.push(`${ed.degree} ${ed.institution ? `\n${ed.institution}` : ''} ${ed.year ? `${ed.year}` : ''}`);
+        lines.push(`${cleanText(ed.degree)} ${ed.institution ? `\n${cleanText(ed.institution)}` : ''} ${ed.year ? `${cleanText(ed.year)}` : ''}`);
       });
     }
 
@@ -112,7 +175,8 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
   };
 
   // Helper to render text with keyword highlights
-  const renderHighlightedText = (text) => {
+  const renderHighlightedText = (rawStr) => {
+    const text = cleanText(rawStr);
     if (!highlightMode || !text) return text;
 
     const allKeywords = [...new Set([...injectedKeywords, ...matchedKeywords])].filter(k => k && k.length > 2);
@@ -274,21 +338,21 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
         </div>
 
         {/* Professional Summary */}
-        {resume.summary && (
+        {sanitizedSummary && (
           <div className="resume-section">
             <div className="resume-section-title">Professional Summary</div>
             <p className="resume-summary-text">
-              {renderHighlightedText(resume.summary)}
+              {renderHighlightedText(sanitizedSummary)}
             </p>
           </div>
         )}
 
         {/* Technical Skills */}
-        {resume.skills && Object.keys(resume.skills).length > 0 && (
+        {Object.keys(sanitizedSkills).length > 0 && (
           <div className="resume-section">
             <div className="resume-section-title">Technical Skills</div>
             <div className="resume-skills-block">
-              {Object.entries(resume.skills).map(([cat, skList], idx) => (
+              {Object.entries(sanitizedSkills).map(([cat, skList], idx) => (
                 <div key={idx} className="resume-skills-category">
                   <span className="resume-skills-label">{cat}: </span>
                   <span>{renderHighlightedText(Array.isArray(skList) ? skList.join(', ') : String(skList))}</span>
@@ -299,10 +363,10 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
         )}
 
         {/* Work Experience */}
-        {resume.experience && resume.experience.length > 0 && (
+        {sanitizedExperience && sanitizedExperience.length > 0 && (
           <div className="resume-section">
             <div className="resume-section-title">Work Experience</div>
-            {resume.experience.map((job, idx) => (
+            {sanitizedExperience.map((job, idx) => (
               <div key={idx} className="resume-experience-item">
                 <div className="exp-header-row">
                   <span>{job.role} {job.company ? `| ${job.company}` : ''}</span>
@@ -328,11 +392,11 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
         )}
 
         {/* Certifications & Achievements */}
-        {resume.certifications && resume.certifications.length > 0 && (
+        {sanitizedCertifications && sanitizedCertifications.length > 0 && (
           <div className="resume-section">
             <div className="resume-section-title">Certifications & Achievements</div>
             <ul className="resume-bullets">
-              {resume.certifications.map((cert, idx) => (
+              {sanitizedCertifications.map((cert, idx) => (
                 <li key={idx}>
                   {renderHighlightedText(cert)}
                 </li>
@@ -346,14 +410,14 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
           <div className="resume-section">
             <div className="resume-section-title">Education</div>
             {resume.education.map((edu, idx) => (
-              <div key={idx} style={{ marginBottom: '0.2rem' }}>
+              <div key={idx} style={{ marginBottom: '0.15rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '9pt', color: '#111827' }}>
-                  <span>{edu.degree}</span>
-                  <span>{edu.year}</span>
+                  <span>{cleanText(edu.degree)}</span>
+                  <span>{cleanText(edu.year)}</span>
                 </div>
                 {edu.institution && (
-                  <div style={{ fontSize: '8.5pt', color: '#4b5563', marginTop: '0.05rem' }}>
-                    {edu.institution}
+                  <div style={{ fontSize: '8.5pt', color: '#4b5563', marginTop: '0.04rem' }}>
+                    {cleanText(edu.institution)}
                   </div>
                 )}
               </div>

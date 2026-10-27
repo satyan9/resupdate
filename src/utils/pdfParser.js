@@ -7,6 +7,22 @@ if (typeof window !== 'undefined' && 'Worker' in window) {
 }
 
 /**
+ * Normalizes text extracted from PDF: cleans broken year tokens like "202 5",
+ * fixes spaces around hyphens in compound words ("configuration - driven"),
+ * removes spaces before punctuation, and strips trailing ". link".
+ */
+export function cleanResumeText(str) {
+  if (!str || typeof str !== 'string') return str;
+  return str
+    .replace(/\b(19\d|20\d)\s+(\d)\b/g, '$1$2')
+    .replace(/\b([a-zA-Z0-9]+)\s+[-–—]\s+([a-zA-Z0-9]+)\b/g, '$1-$2')
+    .replace(/\s+([,.:;!?])/g, '$1')
+    .replace(/\s*\.?\s*link\s*$/i, '')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
+}
+
+/**
  * Extracts plain text and hyperlink annotations from an uploaded PDF File object
  * @param {File} file 
  * @returns {Promise<{ text: string, links: string[] }>}
@@ -155,9 +171,9 @@ export function parseResumeTextToStructured(rawText, extractedLinks = []) {
 
   // 4. Section Slicing
   const sectionKeywords = {
-    summary: /^(professional\s+summary|summary|profile|about\s+me|objective)/i,
+    summary: /^(?:p\s*roficinal|proficinal|profisial|professional|professinal)?\s*(?:summary|profile|about\s*me|objective)/i,
     skills: /^(technical\s+skills|skills|core\s+competencies|technologies|tools)/i,
-    experience: /^(work\s+experience|professional\s+experience|experience|employment\s+history|projects)/i,
+    experience: /^(work\s+experience|professional\s+experience|professional\s+projects|experience|employment\s+history|projects)/i,
     certifications: /^(certifications\s*(?:&|and)?\s*achievements|certifications|achievements|licenses|credentials)/i,
     education: /^(education|academic\s+background|qualifications)/i
   };
@@ -173,13 +189,19 @@ export function parseResumeTextToStructured(rawText, extractedLinks = []) {
   let currentSection = null;
 
   for (let i = 1; i < rawLines.length; i++) {
-    const line = rawLines[i];
+    const line = cleanResumeText(rawLines[i]);
+    if (!line) continue;
 
     let foundSection = null;
-    for (const [key, regex] of Object.entries(sectionKeywords)) {
-      if (regex.test(line) && line.length < 45) {
-        foundSection = key;
-        break;
+    const lower = line.toLowerCase();
+    if (lower.includes('roficinal summary') || lower.includes('profisial summary') || lower.includes('professional summary')) {
+      foundSection = 'summary';
+    } else {
+      for (const [key, regex] of Object.entries(sectionKeywords)) {
+        if (regex.test(line) && line.length < 45) {
+          foundSection = key;
+          break;
+        }
       }
     }
 
@@ -228,11 +250,22 @@ export function parseResumeTextToStructured(rawText, extractedLinks = []) {
           parsedExperience.push(currentCompany);
         }
 
-        const matchedDate = compOrDates.match(dateRangeRegex)?.[0] || "";
+        const matchedDate = cleanResumeText(compOrDates.match(dateRangeRegex)?.[0] || "");
+        let cleanComp = cleanResumeText(compOrDates.replace(dateRangeRegex, '').trim().replace(/^[|–\-\s]+|[|–\-\s]+$/g, '') || "Client Project");
+        let cleanPeriod = matchedDate;
+
+        const monthEnd = cleanComp.match(/\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)$/i);
+        if (monthEnd) {
+          cleanComp = cleanComp.replace(/\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)$/i, '').trim();
+          if (!cleanPeriod.toLowerCase().includes(monthEnd[1].toLowerCase())) {
+            cleanPeriod = `${monthEnd[1]} ${cleanPeriod}`;
+          }
+        }
+
         currentCompany = {
-          role: roleOrProj,
-          company: compOrDates.replace(dateRangeRegex, '').trim().replace(/^[|–\-\s]+|[|–\-\s]+$/g, '') || "Client Project",
-          period: matchedDate,
+          role: cleanResumeText(roleOrProj),
+          company: cleanComp,
+          period: cleanPeriod,
           location: location || "Remote / On-site",
           bullets: []
         };
@@ -240,17 +273,28 @@ export function parseResumeTextToStructured(rawText, extractedLinks = []) {
         if (currentCompany) {
           parsedExperience.push(currentCompany);
         }
-        const matchedDate = line.match(dateRangeRegex)?.[0] || "";
+        const matchedDate = cleanResumeText(line.match(dateRangeRegex)?.[0] || "");
+        let cleanComp = cleanResumeText(line.replace(dateRangeRegex, '').trim().replace(/^[|–\-\s]+|[|–\-\s]+$/g, '') || "Company");
+        let cleanPeriod = matchedDate;
+
+        const monthEnd = cleanComp.match(/\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)$/i);
+        if (monthEnd) {
+          cleanComp = cleanComp.replace(/\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)$/i, '').trim();
+          if (!cleanPeriod.toLowerCase().includes(monthEnd[1].toLowerCase())) {
+            cleanPeriod = `${monthEnd[1]} ${cleanPeriod}`;
+          }
+        }
+
         currentCompany = {
           role: targetRole || "Data Engineer",
-          company: line.replace(dateRangeRegex, '').trim().replace(/^[|–\-\s]+|[|–\-\s]+$/g, '') || "Company",
-          period: matchedDate,
+          company: cleanComp,
+          period: cleanPeriod,
           location: location || "Remote / On-site",
           bullets: []
         };
       }
     } else if (isBullet) {
-      const cleanBullet = line.replace(/^[•\-\*·]\s*/, '').trim();
+      const cleanBullet = cleanResumeText(line.replace(/^[•\-\*·]\s*/, '').trim());
       if (cleanBullet.length > 5) {
         if (!currentCompany) {
           currentCompany = {
@@ -265,7 +309,7 @@ export function parseResumeTextToStructured(rawText, extractedLinks = []) {
       }
     } else if (currentCompany && currentCompany.bullets.length > 0) {
       const lastIdx = currentCompany.bullets.length - 1;
-      currentCompany.bullets[lastIdx] += ' ' + line.trim();
+      currentCompany.bullets[lastIdx] = cleanResumeText(currentCompany.bullets[lastIdx] + ' ' + line.trim());
     }
   });
 
@@ -276,8 +320,8 @@ export function parseResumeTextToStructured(rawText, extractedLinks = []) {
   // 7. Parse Education
   const parsedEducation = [];
   if (sections.education.length > 0) {
-    let degree = sections.education[0] || "B.Tech – Electronics and Communication Engineering";
-    let institution = sections.education[1] || "";
+    let degree = cleanResumeText(sections.education[0] || "B.Tech – Electronics and Communication Engineering");
+    let institution = cleanResumeText(sections.education[1] || "");
     let year = "";
 
     const dateMatch = sections.education.join(' ').match(/(?:Jun|May|Jul|Aug|Sep|Oct|Nov|Dec|Jan|Feb|Mar)?\s*\d{4}\s*[-–]\s*(?:Jun|May|Jul|Aug|Sep|Oct|Nov|Dec|Jan|Feb|Mar)?\s*\d{4}/i);
@@ -293,25 +337,25 @@ export function parseResumeTextToStructured(rawText, extractedLinks = []) {
   // 8. Parse Certifications & Achievements
   const parsedCertifications = [];
   sections.certifications.forEach(line => {
-    const clean = line.replace(/^[•\-\*·]\s*/, '').trim();
+    const clean = cleanResumeText(line.replace(/^[•\-\*·]\s*/, '').trim());
     if (clean.length > 5) {
       parsedCertifications.push(clean);
     }
   });
 
   return {
-    fullName: fullName,
-    targetRole: targetRole,
-    headline: headline,
+    fullName: cleanResumeText(fullName),
+    targetRole: cleanResumeText(targetRole),
+    headline: cleanResumeText(headline),
     email: emailMatch ? emailMatch[1] : "",
     phone: phoneMatch ? phoneMatch[0] : "",
-    location: location,
+    location: cleanResumeText(location),
     linkedin: linkedin,
     github: github,
     portfolio: portfolio,
     summary: sections.summary.length > 0 
-      ? sections.summary.join(' ') 
-      : "Results-driven Data Engineer with expertise in architecting scalable ETL/ELT pipelines, BigQuery cloud data warehousing, Apache Airflow (Cloud Composer), and Python data frameworks. Proven track record optimizing query performance by 85%, implementing Dataplex data governance, and orchestrating robust cloud data platforms across enterprise ecosystems.",
+      ? cleanResumeText(sections.summary.join(' ')) 
+      : "Google Cloud Certified Data Engineer with 2+ years of experience designing cloud-native ETL/ELT pipelines on GCP using BigQuery, Cloud Composer, Cloud Data Fusion, Python, PySpark, and SQL. Experienced in managing 600+ daily ETL pipelines, optimizing BigQuery performance, implementing CI/CD automation, and delivering reliable enterprise data solutions.",
     skills: Object.keys(parsedSkills).length > 0 ? parsedSkills : { "Technical Skills": [] },
     experience: parsedExperience,
     education: parsedEducation,
