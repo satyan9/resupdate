@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Download, FileDown, Copy, Check, Eye, Sparkles, Printer } from 'lucide-react';
+import { Download, FileDown, Copy, Check, Eye, Sparkles, Printer, FileText } from 'lucide-react';
 import { exportResumeToDocx } from '../utils/docxExporter';
 
 export default function ResumeViewer({ resume, injectedKeywords = [], matchedKeywords = [] }) {
   const [highlightMode, setHighlightMode] = useState(true);
+  const [showSummary, setShowSummary] = useState(Boolean(resume?.summary && resume.summary.trim().length > 0));
   const [copied, setCopied] = useState(false);
 
   if (!resume) return null;
@@ -14,37 +15,60 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
 
   const handleDownloadDocx = async () => {
     try {
-      await exportResumeToDocx(resume);
+      await exportResumeToDocx(resume, { showSummary });
     } catch (e) {
       console.error("DOCX generation error:", e);
-      alert("Error generating Word document. Please try Print to PDF instead.");
+      alert("Error generating Word document. Please try Export ATS PDF instead.");
     }
   };
 
   const handleCopyText = () => {
     const lines = [];
     lines.push(resume.fullName || "Candidate");
-    if (resume.targetRole) lines.push(resume.targetRole);
-    lines.push([resume.email, resume.phone, resume.location, resume.linkedin, resume.github].filter(Boolean).join(' | '));
-    lines.push("\n--- PROFESSIONAL SUMMARY ---");
-    lines.push(resume.summary || "");
-    lines.push("\n--- SKILLS ---");
-    if (resume.skills) {
+    if (resume.headline || resume.targetRole) lines.push(resume.headline || resume.targetRole);
+    
+    const contactParts = [
+      resume.phone,
+      resume.email,
+      resume.location,
+      resume.linkedin,
+      resume.portfolio,
+      resume.github
+    ].filter(Boolean);
+    if (contactParts.length > 0) lines.push(contactParts.join(' | '));
+
+    if (showSummary && resume.summary) {
+      lines.push("\nPROFESSIONAL SUMMARY");
+      lines.push(resume.summary);
+    }
+
+    if (resume.skills && Object.keys(resume.skills).length > 0) {
+      lines.push("\nTECHNICAL SKILLS");
       for (const [cat, sk] of Object.entries(resume.skills)) {
         lines.push(`${cat}: ${Array.isArray(sk) ? sk.join(', ') : sk}`);
       }
     }
-    lines.push("\n--- EXPERIENCE ---");
-    if (resume.experience) {
+
+    if (resume.experience && resume.experience.length > 0) {
+      lines.push("\nWORK EXPERIENCE");
       resume.experience.forEach(exp => {
-        lines.push(`\n${exp.role} - ${exp.company} (${exp.period || ''})`);
+        lines.push(`\n${exp.role || ''} | ${exp.company || ''} ${exp.period ? `${exp.period}` : ''}`);
         if (exp.bullets) exp.bullets.forEach(b => lines.push(`• ${b}`));
       });
     }
-    lines.push("\n--- EDUCATION ---");
-    if (resume.education) {
-      resume.education.forEach(ed => lines.push(`${ed.degree} - ${ed.institution} (${ed.year || ''})`));
+
+    if (resume.certifications && resume.certifications.length > 0) {
+      lines.push("\nCERTIFICATIONS & ACHIEVEMENTS");
+      resume.certifications.forEach(cert => lines.push(`• ${cert}`));
     }
+
+    if (resume.education && resume.education.length > 0) {
+      lines.push("\nEDUCATION");
+      resume.education.forEach(ed => {
+        lines.push(`${ed.degree} ${ed.institution ? `\n${ed.institution}` : ''} ${ed.year ? `${ed.year}` : ''}`);
+      });
+    }
+
     navigator.clipboard.writeText(lines.join('\n'));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -54,8 +78,7 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
   const renderHighlightedText = (text) => {
     if (!highlightMode || !text) return text;
 
-    // Build combined regex from injected and matched keywords
-    const allKeywords = [...new Set([...injectedKeywords, ...matchedKeywords])].filter(k => k.length > 2);
+    const allKeywords = [...new Set([...injectedKeywords, ...matchedKeywords])].filter(k => k && k.length > 2);
     if (allKeywords.length === 0) return text;
 
     const regex = new RegExp(`\\b(${allKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'gi');
@@ -75,10 +98,19 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
     });
   };
 
+  const contactList = [
+    resume.phone,
+    resume.email,
+    resume.location,
+    resume.linkedin,
+    resume.portfolio,
+    resume.github
+  ].filter(Boolean);
+
   return (
     <div className="glass-card">
       <div className="card-header-row export-control-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
           <h2 className="card-title">
             <Sparkles size={20} className="text-emerald" />
             ATS-Standard Resume Preview
@@ -91,6 +123,17 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
             <Eye size={13} />
             {highlightMode ? 'Keyword Highlights ON' : 'Highlights OFF'}
           </button>
+          {resume.summary && (
+            <button 
+              className={`chip ${showSummary ? 'active' : ''}`}
+              onClick={() => setShowSummary(!showSummary)}
+              type="button"
+              title="Toggle Summary section visibility"
+            >
+              <FileText size={13} />
+              {showSummary ? 'Summary Included' : 'Summary Hidden (1-Page Fit)'}
+            </button>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -127,21 +170,24 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
       <div className="paper-wrapper" id="ats-resume-paper">
         {/* Header */}
         <div className="resume-header">
-          <div className="resume-name">{resume.fullName || "Candidate Name"}</div>
-          {resume.targetRole && (
-            <div className="resume-target-role">{resume.targetRole}</div>
+          <div className="resume-name">{resume.fullName || "SATYANARAYANA REDDY KOLAGATLA"}</div>
+          {(resume.headline || resume.targetRole) && (
+            <div className="resume-target-role">{resume.headline || resume.targetRole}</div>
           )}
-          <div className="resume-contact">
-            {resume.email && <span>{resume.email}</span>}
-            {resume.phone && <span>• {resume.phone}</span>}
-            {resume.location && <span>• {resume.location}</span>}
-            {resume.linkedin && <span>• {resume.linkedin}</span>}
-            {resume.github && <span>• {resume.github}</span>}
-          </div>
+          {contactList.length > 0 && (
+            <div className="resume-contact">
+              {contactList.map((item, idx) => (
+                <React.Fragment key={idx}>
+                  <span>{item}</span>
+                  {idx < contactList.length - 1 && <span style={{ opacity: 0.5, margin: '0 0.35rem' }}>|</span>}
+                </React.Fragment>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Professional Summary */}
-        {resume.summary && (
+        {/* Optional Professional Summary */}
+        {showSummary && resume.summary && (
           <div className="resume-section">
             <div className="resume-section-title">Professional Summary</div>
             <p className="resume-summary-text">
@@ -153,7 +199,7 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
         {/* Technical Skills */}
         {resume.skills && Object.keys(resume.skills).length > 0 && (
           <div className="resume-section">
-            <div className="resume-section-title">Core Competencies & Technical Skills</div>
+            <div className="resume-section-title">Technical Skills</div>
             <div className="resume-skills-block">
               {Object.entries(resume.skills).map(([cat, skList], idx) => (
                 <div key={idx} className="resume-skills-category">
@@ -168,17 +214,18 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
         {/* Professional Experience */}
         {resume.experience && resume.experience.length > 0 && (
           <div className="resume-section">
-            <div className="resume-section-title">Professional Experience</div>
+            <div className="resume-section-title">Work Experience</div>
             {resume.experience.map((job, idx) => (
               <div key={idx} className="resume-experience-item">
                 <div className="exp-header-row">
-                  <span>{job.company}</span>
+                  <span>{job.role} {job.company ? `| ${job.company}` : ''}</span>
                   <span>{job.period}</span>
                 </div>
-                <div className="exp-sub-row">
-                  <span>{job.role}</span>
-                  <span>{job.location}</span>
-                </div>
+                {job.location && (
+                  <div className="exp-sub-row">
+                    <span>{job.location}</span>
+                  </div>
+                )}
                 {job.bullets && job.bullets.length > 0 && (
                   <ul className="resume-bullets">
                     {job.bullets.map((b, bIdx) => (
@@ -193,25 +240,10 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
           </div>
         )}
 
-        {/* Education */}
-        {resume.education && resume.education.length > 0 && (
-          <div className="resume-section">
-            <div className="resume-section-title">Education</div>
-            {resume.education.map((edu, idx) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5pt', marginBottom: '0.25rem' }}>
-                <div>
-                  <strong>{edu.degree}</strong> – {edu.institution}
-                </div>
-                <div>{edu.year}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Certifications */}
+        {/* Certifications & Achievements */}
         {resume.certifications && resume.certifications.length > 0 && (
           <div className="resume-section">
-            <div className="resume-section-title">Certifications</div>
+            <div className="resume-section-title">Certifications & Achievements</div>
             <ul className="resume-bullets">
               {resume.certifications.map((cert, idx) => (
                 <li key={idx}>
@@ -219,6 +251,26 @@ export default function ResumeViewer({ resume, injectedKeywords = [], matchedKey
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Education */}
+        {resume.education && resume.education.length > 0 && (
+          <div className="resume-section">
+            <div className="resume-section-title">Education</div>
+            {resume.education.map((edu, idx) => (
+              <div key={idx} style={{ marginBottom: '0.35rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '9.5pt', color: '#111827' }}>
+                  <span>{edu.degree}</span>
+                  <span>{edu.year}</span>
+                </div>
+                {edu.institution && (
+                  <div style={{ fontSize: '9pt', color: '#4b5563', marginTop: '0.1rem' }}>
+                    {edu.institution}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>

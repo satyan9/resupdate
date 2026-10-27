@@ -1,80 +1,94 @@
-// High quality pre-configured sample data for instant 1-click test drives
+// High quality pre-configured sample data strictly matching Satyanarayana's real resume structure
 
 export const SAMPLE_RESUME = {
-  fullName: "Alex Rivera",
-  targetRole: "Senior Software Engineer",
-  email: "alex.rivera@example.com",
-  phone: "(555) 234-5678",
-  location: "San Francisco, CA",
-  linkedin: "linkedin.com/in/alex-rivera-dev",
-  github: "github.com/alexrivera",
-  summary: "Results-driven Software Engineer with 6+ years of experience designing and building scalable web applications. Proficient in JavaScript, React, Node.js, and SQL databases. Strong collaborator with a passion for clean code, automated testing, and agile practices.",
+  fullName: "SATYANARAYANA REDDY KOLAGATLA",
+  headline: "Data Engineer | ETL/ELT Pipeline Development | Bigquery | Airflow",
+  targetRole: "Data Engineer",
+  email: "satyanarayanareddykolagatla@gmail.com",
+  phone: "+91 8639822170",
+  location: "Hyderabad, India",
+  linkedin: "LinkedIn",
+  portfolio: "Portfolio",
+  github: "",
+  summary: "",
   skills: {
-    "Programming Languages": ["JavaScript (ES6+)", "TypeScript", "Python", "SQL"],
-    "Frontend Frameworks": ["React.js", "Redux", "HTML5", "CSS3/SASS"],
-    "Backend & APIs": ["Node.js", "Express", "RESTful APIs", "PostgreSQL"],
-    "DevOps & Tools": ["Git", "Docker", "Jest", "Webpack"]
+    "Cloud (GCP)": ["BigQuery", "Cloud Storage", "Cloud Composer (Airflow)", "Data Fusion (ETL)", "Cloud KMS (Secret Management)", "Dataproc", "Dataflow", "Pub/Sub", "Apache Beam", "Dataplex", "Cloud Build", "Cloud Run", "Cloud Scheduler", "Cloud Monitoring", "Cloud Logging", "Artifact Registry", "Cloud IAM", "Discovery Engine (Vertex AI Search)"],
+    "Languages / DBs": ["Python", "PySpark", "SQL", "Apache Spark"],
+    "AI Search & Analytics": ["Google Cloud Discovery Engine", "Enterprise Search", "Search Analytics", "Catalog Indexing", "BigQuery Audit Logs"],
+    "Infrastructure": ["Bitbucket", "Version Control", "Git", "Docker", "CI/CD", "Linux"],
+    "Data Engineering": ["Databricks", "ETL/ELT Pipelines", "Data Modeling", "Data Validation", "Data Transformation", "Incremental Loading", "Metadata-Driven Pipelines", "Configuration-Driven ETL", "Partitioning", "Clustering", "Data Governance"],
+    "BI & Analytics": ["Looker Studio", "Tableau", "Power BI"]
   },
   experience: [
     {
-      company: "Apex Cloud Solutions",
-      role: "Senior Software Engineer",
-      period: "2022 – Present",
-      location: "San Francisco, CA",
+      company: "FISClouds Pvt. Ltd.",
+      role: "Data Engineer",
+      period: "Nov 2024 – July 2026",
+      location: "Hyderabad, India",
+      bullets: []
+    },
+    {
+      company: "Banking Client – Financial Sector",
+      role: "Enterprise ODS & Secure ETL Optimization",
+      period: "May 2025 – July 2026",
+      location: "Remote / Hybrid",
       bullets: [
-        "Architected and deployed high-traffic customer onboarding portal serving 150k+ monthly active users.",
-        "Refactored legacy REST endpoints into optimized Node.js microservices, cutting API response times by 35%.",
-        "Collaborated with UX designers and product managers to release 12 core product features on schedule.",
-        "Mentored 4 junior engineers on unit testing standards, code reviews, and TypeScript design patterns."
+        "Designed and implemented enterprise ODS ETL/ELT pipelines to integrate banking data into BigQuery using Cloud Data Fusion and Cloud Composer.",
+        "Built Landing, Raw, Staging, and Curated data layers with Dataplex-based governance and automated data quality validation.",
+        "Optimized BigQuery storage and query performance using partitioning, clustering, and SQL tuning, improving query execution by 85% and reducing bytes processed by up to 99.9%.",
+        "Developed Tableau dashboards for ETL monitoring, Airflow DAG execution, and operational reporting, providing real-time platform visibility.",
+        "Utilized Cloud Data Fusion to connect on-premises servers with diverse databases (Oracle, MySQL, SQL Server, PostgreSQL) to ingest data into BigQuery."
       ]
     },
     {
-      company: "Vanguard Tech Labs",
-      role: "Software Engineer",
-      period: "2019 – 2022",
-      location: "Austin, TX",
+      company: "Telecom Client",
+      role: "AI-Powered Enterprise Search & Catalog Data Platform",
+      period: "Nov 2024 – April 2025",
+      location: "Remote / Hybrid",
       bullets: [
-        "Built responsive client-facing dashboards using React, Redux, and Chart.js for real-time analytics.",
-        "Implemented secure JWT authentication and role-based access control across internal management tools.",
-        "Automated CI/CD deployment pipelines using GitHub Actions, decreasing release cycle duration by 40%.",
-        "Wrote end-to-end integration tests using Cypress and Jest, maintaining 85%+ test coverage."
+        "Designed and developed a configuration-driven ETL framework using Python to ingest, transform, and standardize telecom catalog data from multiple sources into BigQuery through scalable, reusable pipelines.",
+        "Built metadata-driven Python transformation pipelines to normalize complex JSON data, implement business validation rules, and process nested structures while ensuring schema consistency across multiple catalog formats.",
+        "Engineered BigQuery ingestion pipelines integrated with Cloud Storage, automated data refresh processes, and reusable loading utilities to support scalable, configuration-based data processing.",
+        "Integrated BigQuery with Google Cloud Discovery Engine to enable AI-powered enterprise search through automated catalog indexing, synchronization, and reusable Python-based document ingestion.",
+        "Developed BigQuery SQL analytics to monitor search performance and implemented telecom-specific transformation rules for prepaid, postpaid, broadband, roaming, and rewards catalogs in collaboration with business stakeholders."
       ]
     }
   ],
+  certifications: [
+    "Google Cloud Certified: Professional Data Engineer (link)",
+    "Microsoft Certified: Azure AI Fundamentals (link)",
+    "Solved 250+ algorithmic problems on LeetCode | 6-Star Python badge on Hacker Rank",
+    "Received On-the-Spot Award at FISClouds for delivering critical project milestones"
+  ],
   education: [
     {
-      degree: "Bachelor of Science in Computer Science",
-      institution: "University of Texas at Austin",
-      year: "2019",
-      honors: "Dean's Honor List"
+      degree: "B.Tech – Electronics and Communication Engineering",
+      institution: "KKR & KSR Institute of Technology and Sciences, Guntur | GPA: 8.5/10",
+      year: "Jun 2020 – May 2024"
     }
-  ],
-  certifications: [
-    "AWS Certified Solutions Architect – Associate",
-    "Certified Scrum Master (CSM)"
   ]
 };
 
-export const SAMPLE_JD = `Role: Staff / Lead Full Stack Cloud Architect & Engineer
-Company: CloudScale Enterprise Systems
-Location: San Francisco, CA / Remote
+export const SAMPLE_JD = `Role: Senior Data Engineer (GCP & BigQuery Platform)
+Company: Global Data Systems Inc.
+Location: Hyderabad, India / Remote
 
 About The Role:
-We are seeking an exceptional Staff/Lead Engineer to spearhead our next-generation distributed SaaS platform. You will lead cross-functional architecture initiatives, optimize high-throughput microservices, and champion Kubernetes cloud-native infrastructure.
+We are seeking an experienced Data Engineer to design, scale, and optimize enterprise cloud data warehousing and real-time/batch ETL/ELT pipelines on Google Cloud Platform (GCP).
 
 Key Responsibilities:
-• Architect, scale, and maintain fault-tolerant distributed systems processing over 50M daily events with 99.99% uptime.
-• Lead end-to-end cloud-native microservices development utilizing TypeScript, Node.js, Go/Python, and GraphQL.
-• Design and maintain robust CI/CD pipelines with automated security testing using Docker, Kubernetes (K8s), and Terraform on AWS.
-• Champion observability and performance optimization using Prometheus, Grafana, and OpenTelemetry.
-• Implement scalable event-driven architectures with Apache Kafka, RabbitMQ, and Redis caching layers.
-• Drive engineering excellence through System Design reviews, Test-Driven Development (TDD), and Agile/Scrum leadership.
-• Collaborate with Executive Product Stakeholders, Security Teams, and mentor senior developers.
+• Architect and maintain high-throughput ETL/ELT pipelines using BigQuery, Cloud Composer (Apache Airflow), and Cloud Data Fusion.
+• Implement robust Data Lakehouse architectures spanning Landing, Raw, Staging, and Curated layers with Dataplex Data Governance and automated data quality checks.
+• Accelerate BigQuery SQL performance, query execution, and storage optimization using Partitioning, Clustering, and cost tuning.
+• Build reusable, metadata-driven Python & PySpark transformation frameworks to ingest JSON, relational (PostgreSQL, Oracle, SQL Server), and streaming data.
+• Establish automated CI/CD deployment pipelines using Git, Docker, and Linux for Airflow DAGs and cloud data infrastructure.
+• Integrate BigQuery with Google Cloud Discovery Engine, Vertex AI Search, and BI visualization platforms (Tableau, Looker Studio, Power BI).
+• Collaborate with cross-functional stakeholders, data analysts, and engineering teams to ensure schema consistency and operational reliability.
 
-Required Technical Skills & Qualifications:
-• 5+ years of extensive hands-on experience in Full Stack development with TypeScript, React.js, and Node.js.
-• Proven expertise with AWS cloud infrastructure (ECS, Lambda, EKS, S3, RDS PostgreSQL, DynamoDB).
-• Deep practical experience with Kubernetes orchestration, Docker containerization, and Infrastructure as Code (Terraform).
-• Strong mastery of Distributed Caching (Redis), Message Brokers (Kafka / RabbitMQ), and GraphQL API design.
-• Demonstrated track record in Performance Tuning, Load Balancing, and Database Indexing for large-scale relational & NoSQL databases.
-• Strong communication, cross-functional stakeholder management, and team mentorship abilities.`;
+Qualifications & Core Skills:
+• 3+ years hands-on experience in Data Engineering on Google Cloud Platform (GCP).
+• Deep expertise in BigQuery, Cloud Storage, Cloud Composer (Airflow), and Data Fusion.
+• Advanced proficiency in Python, SQL, and PySpark for data transformation and pipeline orchestration.
+• Proven track record with Dataplex, Data Modeling, Partitioning, Clustering, and Query Optimization.
+• Familiarity with Docker, CI/CD, Git, Linux, and Cloud IAM security policies.
+• Google Cloud Certified Professional Data Engineer is strongly preferred.`;

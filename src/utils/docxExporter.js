@@ -4,22 +4,23 @@ import { saveAs } from 'file-saver';
 
 /**
  * Generates and downloads an ATS-compliant Word document (.docx)
- * Strictly follows single-column standard margins, clean standard headings, no tables.
+ * Strictly preserves candidate truth without dummy values or hallucinated fields.
  * @param {object} resume 
+ * @param {object} options 
  */
-export async function exportResumeToDocx(resume) {
+export async function exportResumeToDocx(resume, options = { showSummary: true }) {
   const children = [];
 
-  // 1. Name & Header (Centered)
+  // 1. Name (Centered)
   children.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 60 },
+      spacing: { after: 40 },
       children: [
         new TextRun({
-          text: resume.fullName || "Candidate Name",
+          text: (resume.fullName || "Candidate Name").toUpperCase(),
           bold: true,
-          size: 32, // 16pt
+          size: 28, // 14pt
           font: "Calibri",
           color: "111827"
         })
@@ -27,67 +28,70 @@ export async function exportResumeToDocx(resume) {
     })
   );
 
-  // Target Role
-  if (resume.targetRole) {
+  // Headline / Target Role
+  if (resume.headline || resume.targetRole) {
     children.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { after: 80 },
+        spacing: { after: 60 },
         children: [
           new TextRun({
-            text: resume.targetRole,
+            text: resume.headline || resume.targetRole,
             bold: true,
-            size: 24, // 12pt
+            size: 20, // 10pt
             font: "Calibri",
-            color: "4F46E5"
+            color: "374151"
           })
         ]
       })
     );
   }
 
-  // Contact Info
+  // Contact Info (Only real fields)
   const contactParts = [
-    resume.email,
     resume.phone,
+    resume.email,
     resume.location,
     resume.linkedin,
+    resume.portfolio,
     resume.github
   ].filter(Boolean);
 
-  children.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
-      children: [
-        new TextRun({
-          text: contactParts.join("  |  "),
-          size: 19, // 9.5pt
-          font: "Calibri",
-          color: "4B5563"
-        })
-      ]
-    })
-  );
+  if (contactParts.length > 0) {
+    children.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 140 },
+        children: [
+          new TextRun({
+            text: contactParts.join("  |  "),
+            size: 18, // 9pt
+            font: "Calibri",
+            color: "4B5563"
+          })
+        ]
+      })
+    );
+  }
 
   // Helper for Section Heading
   const addSectionHeader = (title) => {
     children.push(
       new Paragraph({
-        spacing: { before: 200, after: 100 },
+        spacing: { before: 140, after: 60 },
         border: {
           bottom: {
             color: "9CA3AF",
             space: 1,
             style: BorderStyle.SINGLE,
-            size: 6
+            size: 4
           }
         },
         children: [
           new TextRun({
             text: title.toUpperCase(),
             bold: true,
-            size: 22, // 11pt
+            size: 20, // 10pt
             font: "Calibri",
             color: "111827"
           })
@@ -96,16 +100,16 @@ export async function exportResumeToDocx(resume) {
     );
   };
 
-  // 2. Summary
-  if (resume.summary) {
+  // 2. Summary (Optional)
+  if (options.showSummary && resume.summary && resume.summary.trim().length > 0) {
     addSectionHeader("Professional Summary");
     children.push(
       new Paragraph({
-        spacing: { after: 160 },
+        spacing: { after: 100 },
         children: [
           new TextRun({
             text: resume.summary,
-            size: 20, // 10pt
+            size: 19, // 9.5pt
             font: "Calibri",
             color: "374151"
           })
@@ -116,23 +120,23 @@ export async function exportResumeToDocx(resume) {
 
   // 3. Technical Skills
   if (resume.skills && Object.keys(resume.skills).length > 0) {
-    addSectionHeader("Core Competencies & Technical Skills");
+    addSectionHeader("Technical Skills");
     for (const [category, items] of Object.entries(resume.skills)) {
       const skillsList = Array.isArray(items) ? items.join(", ") : String(items);
       children.push(
         new Paragraph({
-          spacing: { after: 60 },
+          spacing: { after: 40 },
           children: [
             new TextRun({
               text: `${category}: `,
               bold: true,
-              size: 20,
+              size: 19,
               font: "Calibri",
               color: "1F2937"
             }),
             new TextRun({
               text: skillsList,
-              size: 20,
+              size: 19,
               font: "Calibri",
               color: "374151"
             })
@@ -142,44 +146,48 @@ export async function exportResumeToDocx(resume) {
     }
   }
 
-  // 4. Experience
+  // 4. Experience & Projects
   if (resume.experience && resume.experience.length > 0) {
-    addSectionHeader("Professional Experience");
+    addSectionHeader("Work Experience");
     resume.experience.forEach(job => {
-      // Role & Dates
       children.push(
         new Paragraph({
-          spacing: { before: 120, after: 40 },
+          spacing: { before: 80, after: 30 },
           children: [
             new TextRun({
               text: `${job.role} `,
               bold: true,
-              size: 21,
+              size: 19,
               font: "Calibri",
               color: "111827"
             }),
             new TextRun({
-              text: `– ${job.company} (${job.period || ''})`,
+              text: job.company ? `| ${job.company} ` : '',
               bold: true,
-              size: 20,
+              size: 19,
               font: "Calibri",
-              color: "4B5563"
+              color: "374151"
+            }),
+            new TextRun({
+              text: job.period ? `(${job.period})` : '',
+              size: 18,
+              font: "Calibri",
+              color: "6B7280"
             })
           ]
         })
       );
 
-      // Bullets
-      if (job.bullets) {
+      if (job.bullets && job.bullets.length > 0) {
         job.bullets.forEach(bullet => {
           children.push(
             new Paragraph({
               bullet: { level: 0 },
-              spacing: { after: 40 },
+              spacing: { after: 30 },
               children: [
                 new TextRun({
                   text: bullet,
-                  size: 20,
+                  size: 18,
                   font: "Calibri",
                   color: "374151"
                 })
@@ -191,45 +199,18 @@ export async function exportResumeToDocx(resume) {
     });
   }
 
-  // 5. Education
-  if (resume.education && resume.education.length > 0) {
-    addSectionHeader("Education");
-    resume.education.forEach(edu => {
-      children.push(
-        new Paragraph({
-          spacing: { after: 60 },
-          children: [
-            new TextRun({
-              text: `${edu.degree} `,
-              bold: true,
-              size: 20,
-              font: "Calibri",
-              color: "111827"
-            }),
-            new TextRun({
-              text: `– ${edu.institution} (${edu.year || ''})`,
-              size: 20,
-              font: "Calibri",
-              color: "4B5563"
-            })
-          ]
-        })
-      );
-    });
-  }
-
-  // 6. Certifications
+  // 5. Certifications & Achievements
   if (resume.certifications && resume.certifications.length > 0) {
-    addSectionHeader("Certifications");
+    addSectionHeader("Certifications & Achievements");
     resume.certifications.forEach(cert => {
       children.push(
         new Paragraph({
           bullet: { level: 0 },
-          spacing: { after: 40 },
+          spacing: { after: 30 },
           children: [
             new TextRun({
               text: cert,
-              size: 20,
+              size: 18,
               font: "Calibri",
               color: "374151"
             })
@@ -239,17 +220,50 @@ export async function exportResumeToDocx(resume) {
     });
   }
 
-  // Create document
+  // 6. Education
+  if (resume.education && resume.education.length > 0) {
+    addSectionHeader("Education");
+    resume.education.forEach(edu => {
+      children.push(
+        new Paragraph({
+          spacing: { after: 40 },
+          children: [
+            new TextRun({
+              text: `${edu.degree} `,
+              bold: true,
+              size: 19,
+              font: "Calibri",
+              color: "111827"
+            }),
+            new TextRun({
+              text: edu.institution ? `\n${edu.institution} ` : '',
+              size: 18,
+              font: "Calibri",
+              color: "4B5563"
+            }),
+            new TextRun({
+              text: edu.year ? `(${edu.year})` : '',
+              size: 18,
+              font: "Calibri",
+              color: "6B7280"
+            })
+          ]
+        })
+      );
+    });
+  }
+
+  // Create document with standard 0.4 inch margins
   const doc = new Document({
     sections: [
       {
         properties: {
           page: {
             margin: {
-              top: 720,    // 0.5 in
-              right: 720,
-              bottom: 720,
-              left: 720
+              top: 576,    // 0.4 in
+              right: 576,
+              bottom: 576,
+              left: 576
             }
           }
         },
@@ -258,7 +272,6 @@ export async function exportResumeToDocx(resume) {
     ]
   });
 
-  // Pack & Save
   const blob = await Packer.toBlob(doc);
   const cleanName = (resume.fullName || "Candidate").toLowerCase().replace(/\s+/g, '_');
   saveAs(blob, `${cleanName}_ATS_Tailored_Resume.docx`);

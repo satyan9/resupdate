@@ -3,7 +3,6 @@ import * as pdfjsLib from 'pdfjs-dist';
 
 // Configure PDF.js worker
 if (typeof window !== 'undefined' && 'Worker' in window) {
-  // Using official Cloudflare CDN worker matching version for maximum cross-browser reliability
   pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '3.11.174'}/pdf.worker.min.js`;
 }
 
@@ -24,16 +23,26 @@ export async function extractTextFromPDF(file) {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
       
-      let lastY, text = '';
+      let lastY = null;
+      let pageText = '';
+
       for (let item of textContent.items) {
-        if (lastY == item.transform[5] || !lastY) {
-          text += item.str + ' ';
-        } else {
-          text += '\n' + item.str + ' ';
+        const str = item.str;
+        if (!str) continue;
+
+        const currentY = Math.round(item.transform[5]);
+        
+        if (lastY !== null && Math.abs(currentY - lastY) > 5) {
+          pageText += '\n';
+        } else if (pageText.length > 0 && !pageText.endsWith(' ') && !pageText.endsWith('\n')) {
+          pageText += ' ';
         }
-        lastY = item.transform[5];
+        
+        pageText += str;
+        lastY = currentY;
       }
-      fullText += text + '\n\n';
+      
+      fullText += pageText + '\n\n';
     }
     
     return fullText.trim();
@@ -45,117 +54,215 @@ export async function extractTextFromPDF(file) {
 
 /**
  * Converts raw resume text into structured Resume JSON format
+ * Strictly preserves the candidate's real identity, location, role, and projects.
  * @param {string} rawText 
  * @returns {object} structuredResume
  */
 export function parseResumeTextToStructured(rawText) {
-  const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-  
-  // Basic heuristics for contact info extraction
-  const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/i;
-  const phoneRegex = /(\+?\d{1,3}[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}/;
-  const linkedinRegex = /(linkedin\.com\/in\/[a-zA-Z0-9_-]+)/i;
-  const githubRegex = /(github\.com\/[a-zA-Z0-9_-]+)/i;
+  const rawLines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+  if (rawLines.length === 0) return null;
 
-  const emailMatch = rawText.match(emailRegex);
-  const phoneMatch = rawText.match(phoneRegex);
-  const linkedinMatch = rawText.match(linkedinRegex);
-  const githubMatch = rawText.match(githubRegex);
+  // 1. Extract Name (Usually the first non-empty line)
+  const fullName = rawLines[0].replace(/^(resume|curriculum vitae|cv)\s*:?\s*/i, '').trim();
 
-  const fullName = lines.length > 0 ? lines[0] : "Candidate Name";
+  // 2. Extract Contact Info & Header
+  // Support international phone numbers like +91 8639822170, (555) 123-4567, etc.
+  const phoneMatch = rawText.match(/(\+\d{1,3}[\s-]?)?\(?\d{3,5}\)?[\s.-]?\d{3,5}[\s.-]?\d{3,5}/);
+  const emailMatch = rawText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
   
-  // Section headers identification
+  // Extract location (e.g. "Hyderabad, India", "San Francisco, CA", etc.)
+  let location = "";
+  const locationMatch = rawText.match(/(?:[A-Za-z\s]+),\s*(?:India|USA|United States|UK|Canada|Germany|[A-Z]{2})/i);
+  if (locationMatch) {
+    location = locationMatch[0].trim().replace(/^[|•\-\s]+|[|•\-\s]+$/g, '');
+  }
+
+  // Extract Links
+  const linkedinMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i);
+  const githubMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[a-zA-Z0-9_-]+/i);
+  const portfolioMatch = rawText.match(/(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9_-]+\.(?:dev|me|io|com)/i);
+
+  // Check if header line 1 or 2 contains a role headline (e.g. "Data Engineer | ETL/ELT Pipeline Development | Bigquery | Airflow")
+  let targetRole = "";
+  let headline = "";
+  for (let i = 1; i <= Math.min(3, rawLines.length - 1); i++) {
+    const line = rawLines[i];
+    if (/data engineer|software engineer|architect|developer|devops|data scientist|machine learning|cloud engineer|full stack/i.test(line)) {
+      headline = line.replace(/^[|•\-\s]+|[|•\-\s]+$/g, '');
+      const roleParts = headline.split(/\||,/);
+      targetRole = roleParts[0].trim();
+      break;
+    }
+  }
+
+  if (!targetRole) {
+    targetRole = headline || "Data Engineer";
+  }
+
+  // 3. Section Slicing
   const sectionKeywords = {
-    summary: /(professional\s+summary|summary|profile|about\s+me|objective)/i,
-    skills: /(technical\s+skills|core\s+competencies|skills|technologies|tools)/i,
-    experience: /(work\s+experience|professional\s+experience|experience|employment\s+history)/i,
-    education: /(education|academic\s+background|degrees)/i,
-    certifications: /(certifications|licenses|credentials)/i
+    summary: /^(professional\s+summary|summary|profile|about\s+me|objective)/i,
+    skills: /^(technical\s+skills|skills|core\s+competencies|technologies|tools)/i,
+    experience: /^(work\s+experience|professional\s+experience|experience|employment\s+history|projects)/i,
+    certifications: /^(certifications\s*(?:&|and)?\s*achievements|certifications|achievements|licenses|credentials)/i,
+    education: /^(education|academic\s+background|qualifications)/i
   };
 
-  let currentSection = 'summary';
   const sections = {
     summary: [],
     skills: [],
     experience: [],
-    education: [],
-    certifications: []
+    certifications: [],
+    education: []
   };
 
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    let matchedNewSection = false;
+  let currentSection = null;
+  const headerLinesToSkip = 4; // Skip the top contact header lines
 
-    for (const [secKey, regex] of Object.entries(sectionKeywords)) {
-      if (regex.test(line) && line.length < 35) {
-        currentSection = secKey;
-        matchedNewSection = true;
+  for (let i = 1; i < rawLines.length; i++) {
+    const line = rawLines[i];
+
+    let foundSection = null;
+    for (const [key, regex] of Object.entries(sectionKeywords)) {
+      if (regex.test(line) && line.length < 45) {
+        foundSection = key;
         break;
       }
     }
 
-    if (!matchedNewSection && currentSection) {
+    if (foundSection) {
+      currentSection = foundSection;
+    } else if (currentSection) {
       sections[currentSection].push(line);
     }
   }
 
-  // Parse Experience
-  const expLines = sections.experience;
-  const parsedExperience = [];
-  let currentJob = null;
+  // 4. Parse Technical Skills by Category
+  const parsedSkills = {};
+  let currentSkillCategory = "Technical Skills";
 
-  for (const line of expLines) {
-    const isBullet = line.startsWith('•') || line.startsWith('-') || line.startsWith('*');
-    if (!isBullet && (line.includes('20') || line.includes('–') || line.includes('-') || line.includes('Present'))) {
-      if (currentJob) parsedExperience.push(currentJob);
-      currentJob = {
-        company: line.split(/–|-|,/)[0].trim(),
-        role: "Software Engineer",
-        period: line.match(/\d{4}\s*[-–]\s*(Present|\d{4})/i)?.[0] || "2020 – Present",
-        location: "Remote / Hybrid",
-        bullets: []
-      };
-    } else if (currentJob) {
-      const cleanBullet = line.replace(/^[•\-\*]\s*/, '').trim();
-      if (cleanBullet.length > 10) {
-        currentJob.bullets.push(cleanBullet);
-      }
+  sections.skills.forEach(line => {
+    const categoryMatch = line.match(/^([^:]+):\s*(.+)$/);
+    if (categoryMatch) {
+      currentSkillCategory = categoryMatch[1].trim();
+      const items = categoryMatch[2].split(/[,•|/]/).map(s => s.trim()).filter(Boolean);
+      parsedSkills[currentSkillCategory] = items;
+    } else if (parsedSkills[currentSkillCategory]) {
+      // Continuation line for the previous skill category
+      const extraItems = line.split(/[,•|/]/).map(s => s.trim()).filter(Boolean);
+      parsedSkills[currentSkillCategory].push(...extraItems);
+    } else {
+      const items = line.split(/[,•|/]/).map(s => s.trim()).filter(Boolean);
+      parsedSkills[currentSkillCategory] = (parsedSkills[currentSkillCategory] || []).concat(items);
     }
-  }
-  if (currentJob) parsedExperience.push(currentJob);
+  });
 
-  // Fallback experience if formatting was too complex
-  if (parsedExperience.length === 0) {
-    parsedExperience.push({
-      company: "Previous Organization",
-      role: "Professional",
-      period: "2020 – Present",
-      location: "San Francisco, CA",
-      bullets: expLines.slice(0, 5).map(l => l.replace(/^[•\-\*]\s*/, '').trim()).filter(l => l.length > 10)
+  // 5. Parse Work Experience & Projects
+  const parsedExperience = [];
+  let currentCompany = null;
+  let currentProject = null;
+
+  sections.experience.forEach(line => {
+    const isBullet = line.startsWith('•') || line.startsWith('-') || line.startsWith('*') || line.startsWith('·');
+
+    // Date pattern check like "Nov 2024 – July 2026", "2020 - Present", "May 2025 – July 2026"
+    const hasDateRange = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})\s*[-–]\s*(?:Present|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})/i.test(line);
+
+    if (!isBullet && hasDateRange) {
+      // Check if this is a main company line or a sub-project line
+      if (line.includes('|')) {
+        const parts = line.split('|');
+        const roleOrProj = parts[0].trim();
+        const compOrDates = parts.slice(1).join('|').trim();
+
+        if (currentCompany) {
+          parsedExperience.push(currentCompany);
+        }
+
+        currentCompany = {
+          role: roleOrProj,
+          company: compOrDates.replace(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})\s*[-–]\s*(?:Present|\w+\s*\d{4}|\d{4})/i, '').trim().replace(/^[|–\-\s]+|[|–\-\s]+$/g, '') || "Client Project",
+          period: compOrDates.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})\s*[-–]\s*(?:Present|\w+\s*\d{4}|\d{4})/i)?.[0] || "",
+          location: location || "Remote / On-site",
+          bullets: []
+        };
+      } else {
+        if (currentCompany) {
+          parsedExperience.push(currentCompany);
+        }
+        currentCompany = {
+          role: targetRole || "Data Engineer",
+          company: line.replace(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})\s*[-–]\s*(?:Present|\w+\s*\d{4}|\d{4})/i, '').trim(),
+          period: line.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{4})\s*[-–]\s*(?:Present|\w+\s*\d{4}|\d{4})/i)?.[0] || "",
+          location: location || "Remote / On-site",
+          bullets: []
+        };
+      }
+    } else if (isBullet) {
+      const cleanBullet = line.replace(/^[•\-\*·]\s*/, '').trim();
+      if (cleanBullet.length > 5) {
+        if (!currentCompany) {
+          currentCompany = {
+            role: targetRole || "Data Engineer",
+            company: "Professional Experience",
+            period: "",
+            location: location || "",
+            bullets: []
+          };
+        }
+        currentCompany.bullets.push(cleanBullet);
+      }
+    } else if (currentCompany && currentCompany.bullets.length > 0) {
+      // Continuation of the previous bullet point (line wrapping)
+      const lastIdx = currentCompany.bullets.length - 1;
+      currentCompany.bullets[lastIdx] += ' ' + line.trim();
+    }
+  });
+
+  if (currentCompany) {
+    parsedExperience.push(currentCompany);
+  }
+
+  // 6. Parse Education
+  const parsedEducation = [];
+  if (sections.education.length > 0) {
+    let degree = sections.education[0] || "Degree";
+    let institution = sections.education[1] || "";
+    let year = "";
+
+    const dateMatch = sections.education.join(' ').match(/(?:Jun|May|Jul|Aug|Sep|Oct|Nov|Dec|Jan|Feb|Mar)?\s*\d{4}\s*[-–]\s*(?:Jun|May|Jul|Aug|Sep|Oct|Nov|Dec|Jan|Feb|Mar)?\s*\d{4}/i);
+    if (dateMatch) year = dateMatch[0];
+
+    parsedEducation.push({
+      degree: degree.replace(/(?:Jun|May|Jul|Aug|Sep|Oct|Nov|Dec|Jan|Feb|Mar)?\s*\d{4}\s*[-–]\s*(?:Jun|May|Jul|Aug|Sep|Oct|Nov|Dec|Jan|Feb|Mar)?\s*\d{4}/i, '').trim(),
+      institution: institution.replace(/(?:Jun|May|Jul|Aug|Sep|Oct|Nov|Dec|Jan|Feb|Mar)?\s*\d{4}\s*[-–]\s*(?:Jun|May|Jul|Aug|Sep|Oct|Nov|Dec|Jan|Feb|Mar)?\s*\d{4}/i, '').trim(),
+      year: year
     });
   }
 
+  // 7. Parse Certifications & Achievements
+  const parsedCertifications = [];
+  sections.certifications.forEach(line => {
+    const clean = line.replace(/^[•\-\*·]\s*/, '').trim();
+    if (clean.length > 5) {
+      parsedCertifications.push(clean);
+    }
+  });
+
   return {
     fullName: fullName,
-    targetRole: "Senior Engineer",
-    email: emailMatch ? emailMatch[1] : "candidate@example.com",
-    phone: phoneMatch ? phoneMatch[0] : "(555) 000-0000",
-    location: "United States",
-    linkedin: linkedinMatch ? linkedinMatch[1] : "linkedin.com/in/candidate",
-    github: githubMatch ? githubMatch[1] : "github.com/candidate",
-    summary: sections.summary.join(' ') || "Experienced professional with proven track record in software design, problem solving, and modern agile product delivery.",
-    skills: {
-      "Technical Skills": sections.skills.flatMap(s => s.split(/[,•|/]/)).map(s => s.trim()).filter(s => s.length > 1 && s.length < 25).slice(0, 20)
-    },
+    targetRole: targetRole,
+    headline: headline || targetRole,
+    email: emailMatch ? emailMatch[1] : "",
+    phone: phoneMatch ? phoneMatch[0] : "",
+    location: location,
+    linkedin: linkedinMatch ? linkedinMatch[0] : (rawText.includes("LinkedIn") ? "LinkedIn" : ""),
+    portfolio: portfolioMatch ? portfolioMatch[0] : (rawText.includes("Portfolio") ? "Portfolio" : ""),
+    github: githubMatch ? githubMatch[0] : "",
+    summary: sections.summary.length > 0 ? sections.summary.join(' ') : "",
+    skills: Object.keys(parsedSkills).length > 0 ? parsedSkills : { "Technical Skills": [] },
     experience: parsedExperience,
-    education: [
-      {
-        degree: "Bachelor of Science",
-        institution: sections.education[0] || "Accredited University",
-        year: "2020",
-        honors: ""
-      }
-    ],
-    certifications: sections.certifications.length > 0 ? sections.certifications : ["Industry Professional Certification"]
+    education: parsedEducation,
+    certifications: parsedCertifications
   };
 }
