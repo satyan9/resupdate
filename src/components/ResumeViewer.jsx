@@ -5,13 +5,43 @@ import { exportResumeToDocx } from '../utils/docxExporter';
 // Data normalization and text artifact cleaning helpers
 function cleanText(str) {
   if (!str || typeof str !== 'string') return str || '';
-  return str
+  let res = str
+    // Fix broken year tokens from PDF (e.g. "202 5" -> "2025")
     .replace(/\b(19\d|20\d)\s+(\d)\b/g, '$1$2')
-    .replace(/\b([a-zA-Z0-9]+)\s+[-–—]\s+([a-zA-Z0-9]+)\b/g, '$1-$2')
+    // Fix compound words with spaces: e.g. "On - the - Spot" -> "On-the-Spot"
+    .replace(/\bOn\s*[-–—]\s*the\s*[-–—]\s*Spot\b/gi, 'On-the-Spot')
+    .replace(/\b(\d+)\s*[-–—]\s*Star\b/gi, '$1-Star')
+    .replace(/\bAI\s*[-–—]\s*Powered\b/gi, 'AI-Powered')
+    .replace(/\b([a-zA-Z0-9]+)\s+[-–—]\s+(driven|premises|time|powered|based|native|scale|tier|level|centric)\b/gi, '$1-$2')
+    .replace(/\b(on|real|multi|cross|end|well)\s+[-–—]\s+([a-zA-Z0-9]+)\b/gi, '$1-$2')
+    // Remove space before punctuation
     .replace(/\s+([,.:;!?])/g, '$1')
+    // Remove space inside parentheses
+    .replace(/\s+\)/g, ')')
+    .replace(/\(\s+/g, '(')
+    // Strip trailing ". link" or " link"
     .replace(/\s*\.?\s*link\s*$/i, '')
+    // Fix date ranges without spaces: e.g. "Nov 2024-July 2026", "2020-2024" -> "Nov 2024 – July 2026"
+    .replace(/(\b\d{4})\s*[-–—]\s*([a-zA-Z]{3,}|\d{4}|Present|Current)/g, '$1 – $2')
+    .replace(/(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})\s*[-–—]\s*([a-zA-Z]{3,}|\d{4}|Present|Current)/g, '$1 – $2')
+    // Fix title dashes without spaces: e.g. "Client-Financial" -> "Client – Financial", "B.Tech-Electronics" -> "B.Tech – Electronics"
+    .replace(/(\b[a-zA-Z]{3,})\s*[-–—]\s*([A-Z][a-zA-Z]{3,}\b)/g, (match, p1, p2) => {
+      const lower2 = p2.toLowerCase();
+      if (/^(driven|premises|time|powered|based|native|scale|tier|level|centric)$/.test(lower2)) {
+        return `${p1}-${p2}`;
+      }
+      return `${p1} – ${p2}`;
+    })
+    .replace(/\bB\.Tech\s*[-–—]\s*/gi, 'B.Tech – ')
+    // Re-check On-the-Spot and compound words
+    .replace(/\bOn\s*[-–—\s]*the\s*[-–—\s]*Spot\b/gi, 'On-the-Spot')
+    .replace(/\b(\d+)\s*[-–—\s]*Star\b/gi, '$1-Star')
+    .replace(/\bAI\s*[-–—\s]*Powered\b/gi, 'AI-Powered')
+    // Collapse whitespace
     .replace(/[ \t]+/g, ' ')
     .trim();
+
+  return res;
 }
 
 function sanitizeJob(job) {
@@ -410,13 +440,13 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
           <div className="resume-section">
             <div className="resume-section-title">Education</div>
             {resume.education.map((edu, idx) => (
-              <div key={idx} style={{ marginBottom: '0.15rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '9pt', color: '#111827' }}>
+              <div key={idx} className="resume-education-item">
+                <div className="edu-header-row">
                   <span>{cleanText(edu.degree)}</span>
                   <span>{cleanText(edu.year)}</span>
                 </div>
                 {edu.institution && (
-                  <div style={{ fontSize: '8.5pt', color: '#4b5563', marginTop: '0.04rem' }}>
+                  <div className="edu-sub-row">
                     {cleanText(edu.institution)}
                   </div>
                 )}
