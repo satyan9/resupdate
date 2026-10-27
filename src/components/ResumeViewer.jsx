@@ -110,12 +110,12 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
 
   const handlePrint = () => {
     const oldTitle = document.title;
-    const cleanFileName = (cleanText(resume.fullName) || "Candidate").replace(/\s+/g, '_') + '_ATS_Resume';
-    document.title = cleanFileName;
+    // Clear document title during print dialog to eliminate browser printing the title at top
+    document.title = '';
     window.print();
     setTimeout(() => {
       document.title = oldTitle;
-    }, 1000);
+    }, 1500);
   };
 
   const handleDownloadDocx = async () => {
