@@ -7,10 +7,10 @@ export default function JDProjectImpactCard({ jdProjectImpacts = [], keyPoints =
   // Fallback to keyPoints if tailored impacts list is small
   const displayItems = jdProjectImpacts.length > 0 
     ? jdProjectImpacts 
-    : keyPoints.map((kp, idx) => ({
+    : keyPoints.map((kp) => ({
         jdPoint: kp.point,
-        project: idx % 2 === 0 ? "Enterprise ODS & Secure ETL Optimization | Banking Client" : "AI-Powered Enterprise Search & Catalog Data Platform | Telecom Client",
-        theme: kp.theme
+        project: kp.project || "Experience & Project Initiatives",
+        theme: kp.theme || "Core Deliverable"
       }));
 
   if (displayItems.length === 0) return null;

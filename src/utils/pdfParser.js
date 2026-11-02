@@ -181,23 +181,34 @@ export function parseResumeTextToStructured(rawText, extractedLinks = []) {
     }
   }
 
-  // 3. Extract Headline
-  // Line 1 or 2 typically contains the headline like "Data Engineer| ETL/ELT Pipeline Development | Bigquery | Airflow"
+  // 3. Universal Headline & Target Role Extraction
   let headline = "";
-  let targetRole = "Data Engineer";
+  let targetRole = "Software Professional";
 
-  for (let i = 1; i <= Math.min(3, rawLines.length - 1); i++) {
-    const line = rawLines[i];
-    if (/data engineer|software engineer|architect|developer|pipeline|bigquery|airflow/i.test(line)) {
-      headline = line.replace(/^[|•\-\s]+|[|•\-\s]+$/g, '').trim();
+  const roleKeywordsRegex = /engineer|developer|architect|lead|manager|consultant|specialist|analyst|scientist|designer|administrator|sde|devops|sre|programmer|tester|qa|tech lead|full stack|frontend|backend/i;
+
+  for (let i = 1; i <= Math.min(4, rawLines.length - 1); i++) {
+    const line = rawLines[i].replace(/^[|•\-\s]+|[|•\-\s]+$/g, '').trim();
+    if (!line) continue;
+    if (phoneMatch && line.includes(phoneMatch[0])) continue;
+    if (emailMatch && line.includes(emailMatch[0])) continue;
+    if (/github\.com|linkedin\.com/i.test(line)) continue;
+    if (/summary|experience|skills|education/i.test(line) && line.length < 30) break;
+
+    if (roleKeywordsRegex.test(line) && line.length < 130) {
+      headline = line;
       const parts = headline.split(/\||,/);
       targetRole = parts[0].trim();
+      break;
+    } else if (line.length > 3 && line.length < 80 && !headline) {
+      headline = line;
+      targetRole = line.split(/\||,/)[0].trim();
       break;
     }
   }
 
   if (!headline) {
-    headline = "Data Engineer | ETL/ELT Pipeline Development | Bigquery | Airflow";
+    headline = targetRole;
   }
 
   // 4. Section Slicing
