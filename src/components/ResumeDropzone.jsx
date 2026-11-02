@@ -54,7 +54,7 @@ export default function ResumeDropzone({ resume, setResume, setRawResumeText }) 
   };
 
   const loadSample = () => {
-    setFileName("Satyanarayana_Reddy_Kolagatla_Data_Engineer.pdf");
+    setFileName("sample.pdf");
     setFileSize("128 KB (Preloaded)");
     setResume(SAMPLE_RESUME);
     setRawResumeText(JSON.stringify(SAMPLE_RESUME));
