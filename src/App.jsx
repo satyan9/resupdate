@@ -6,6 +6,7 @@ import JDEditor from './components/JDEditor';
 import ScoreGauge from './components/ScoreGauge';
 import KeywordDrawer from './components/KeywordDrawer';
 import ResumeViewer from './components/ResumeViewer';
+import JDProjectImpactCard from './components/JDProjectImpactCard';
 import { ApiKeyModal, HelpModal } from './components/Modals';
 
 import { extractJDKeywords } from './utils/keywordExtractor';
@@ -248,6 +249,12 @@ export default function App() {
                 isTailored={true}
               />
             )}
+
+            {/* JD Core Responsibilities Woven Into Projects */}
+            <JDProjectImpactCard 
+              jdProjectImpacts={tailoredResume.jdProjectImpacts || []} 
+              keyPoints={jdAnalysis.keyPoints || []} 
+            />
 
             {/* Keyword Status Tray (Hidden from printed PDF) */}
             <KeywordDrawer 
