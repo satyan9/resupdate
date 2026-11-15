@@ -3,7 +3,7 @@ import {
   X, Check, Briefcase, User, Wrench, GraduationCap, 
   Plus, Trash2, Sparkles, ChevronDown, ChevronUp, AlertCircle, Award
 } from 'lucide-react';
-import { RECOMMENDED_TELECOM_PROJECT } from '../data/sampleData';
+import { RECOMMENDED_TELECOM_PROJECT, RECOMMENDED_CPG_HARMONIZATION_PROJECT } from '../data/sampleData';
 
 export default function ResumeEditorModal({ 
   isOpen, 
@@ -91,6 +91,23 @@ export default function ResumeEditorModal({
       return next;
     });
     showToast("✨ Applied recommended PySpark & Databricks Telecom Data Lakehouse project!");
+  };
+
+  const handleApplyRecommendedCPGHarmonizationProject = (projIndex) => {
+    setFormData(prev => {
+      const next = { ...prev };
+      next.experience = [...(next.experience || [])];
+      next.experience[projIndex] = {
+        ...next.experience[projIndex],
+        company: RECOMMENDED_CPG_HARMONIZATION_PROJECT.company,
+        role: RECOMMENDED_CPG_HARMONIZATION_PROJECT.role,
+        period: RECOMMENDED_CPG_HARMONIZATION_PROJECT.period,
+        location: RECOMMENDED_CPG_HARMONIZATION_PROJECT.location,
+        bullets: [...RECOMMENDED_CPG_HARMONIZATION_PROJECT.bullets]
+      };
+      return next;
+    });
+    showToast("✨ Applied CPG & Retail Data Harmonization (GKE, Terraform, Pub/Sub, Cloud Run) project!");
   };
 
   const handleAddProject = () => {
@@ -404,16 +421,28 @@ export default function ResumeEditorModal({
 
                       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         {isTelecomOrProject2 && (
-                          <button
-                            type="button"
-                            className="btn btn-emerald btn-sm"
-                            onClick={() => handleApplyRecommendedTelecomProject(pIdx)}
-                            title="Insert internet-researched PySpark, Databricks & BigQuery Lakehouse bullets"
-                            style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
-                          >
-                            <Sparkles size={13} />
-                            Load PySpark & Databricks Telecom Lakehouse
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              className="btn btn-emerald btn-sm"
+                              onClick={() => handleApplyRecommendedCPGHarmonizationProject(pIdx)}
+                              title="Load CPG & Retail Data Harmonization (GKE, Terraform, Pub/Sub, Cloud Run) project"
+                              style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
+                            >
+                              <Sparkles size={13} />
+                              Load CPG Data Harmonization
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => handleApplyRecommendedTelecomProject(pIdx)}
+                              title="Insert internet-researched PySpark, Databricks & BigQuery Lakehouse bullets"
+                              style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
+                            >
+                              <Sparkles size={13} />
+                              Load PySpark Telecom Lakehouse
+                            </button>
+                          </>
                         )}
                         <button
                           type="button"

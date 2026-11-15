@@ -106,3 +106,17 @@ export const RECOMMENDED_TELECOM_PROJECT = {
     "Orchestrated multi-stage workflows with Apache Airflow (Cloud Composer) and established automated CI/CD deployment pipelines using Git, Docker containers, and Linux environments, enforcing Cloud IAM security policies and Dataplex Data Governance."
   ]
 };
+
+export const RECOMMENDED_CPG_HARMONIZATION_PROJECT = {
+  company: "Retail & CPG Client",
+  role: "Lead GCP Data Engineer – Enterprise Data Harmonization & Cloud Platform",
+  period: "Nov 2024 – April 2025",
+  location: "Hyderabad, India",
+  bullets: [
+    "Architected and deployed an automated GCP Data Harmonization platform ingesting multi-source CPG and Retail point-of-sale (POS) and inventory feeds into BigQuery using Pub/Sub and Cloud Run microservices, standardizing disparate schemas with zero data loss.",
+    "Automated end-to-end cloud infrastructure provisioning and container orchestration using Terraform (IaC) and Google Kubernetes Engine (GKE), managing CI/CD deployment pipelines via Cloud Build, Artifact Registry, and Git workflows.",
+    "Implemented Dataplex data quality, semantic standardization, and master data harmonization pipelines across Landing, Staging, and Curated layers, eliminating product catalog discrepancies by 99.8%.",
+    "Engineered high-performance compute workloads across GCE instances and event-driven Cloud Functions, optimizing BigQuery SQL queries to accelerate CPG demand forecasting analytics by 60% and reduce scan costs.",
+    "Collaborated directly with business stakeholders, data engineers, architects, and leadership teams to drive data-driven decision-making, mentoring junior engineers on Git best practices and production SLA governance."
+  ]
+};

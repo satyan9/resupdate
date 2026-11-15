@@ -4,17 +4,24 @@
 // STRICT ATS INTEGRITY RULE: Preserves candidate's real identity, location, role, projects, and credentials.
 // CORE INNOVATION: Contextually weaves what the Job Description is ACTUALLY about into the candidate's real projects!
 
-import { RECOMMENDED_TELECOM_PROJECT } from '../data/sampleData.js';
+import { RECOMMENDED_TELECOM_PROJECT, RECOMMENDED_CPG_HARMONIZATION_PROJECT } from '../data/sampleData.js';
 
 /**
  * Detects the index of the candidate's second project.
- * If index 0 is an umbrella company with 0 bullets (e.g. FISClouds), index 1 is Project 1 and index 2 is Project 2.
- * Otherwise, index 0 is Project 1 and index 1 is Project 2.
+ * If index 0 is an employer company (e.g. FISClouds), index 1 is Project 1 (e.g. Banking Client),
+ * and index 2 is Project 2 (e.g. Telecom Client / Second Project).
+ * If there are only 2 items in experience, index 1 is Project 2.
  */
 export function getSecondProjectIndex(experience = []) {
   if (!experience || experience.length < 2) return -1;
-  if (experience.length >= 3 && (!experience[0].bullets || experience[0].bullets.length === 0)) {
-    return 2;
+  if (experience.length >= 3) {
+    const exp0 = experience[0];
+    const isEmployer = (exp0.bullets || []).length <= 2 || 
+      /pvt|ltd|corp|inc|technologies|services|consulting|employer|company/i.test(exp0.company || '') ||
+      /client|sector|project/i.test((experience[1]?.company || '') + (experience[1]?.role || ''));
+    if (isEmployer) {
+      return 2;
+    }
   }
   return 1;
 }
@@ -27,10 +34,38 @@ export function synthesizeSecondProjectFromJD(baseProject, jdAnalysis, missingSk
   const { keyPoints = [], keywords = [], targetRole = "Data Engineer" } = jdAnalysis;
   const missingTechNames = missingSkills.map(k => k.name || k);
 
-  // Check if target is GCP Data Engineer (matches Satyanarayana's resume or telecom/lakehouse)
-  const isGCPData = /bigquery|spark|pyspark|composer|airflow|gcp|lakehouse|data fusion|telecom/i.test(keywords.map(k => k.name).join(' ') + ' ' + targetRole);
+  const jdContext = (
+    targetRole + ' ' +
+    keywords.map(k => k.name || k).join(' ') + ' ' +
+    missingTechNames.join(' ') + ' ' +
+    keyPoints.map(kp => kp.point).join(' ')
+  ).toLowerCase();
 
-  if (isGCPData) {
+  // 1. GCP DATA HARMONIZATION & CPG / RETAIL PLATFORM
+  // Triggered when JD emphasizes Data Harmonization, CPG/Retail, or containers/IaC (GKE, Terraform, GCE, Cloud Run/Functions)
+  const isHarmonizationOrCPG = /harmoniz|cpg|retail/i.test(jdContext) ||
+    (/terraform|iac|gke|kubernetes|cloud run|cloud functions|dataplex/i.test(jdContext) && /gcp|google cloud|bigquery/i.test(jdContext));
+
+  if (isHarmonizationOrCPG) {
+    return {
+      company: "Retail & CPG Client",
+      role: "Lead GCP Data Engineer – Enterprise Data Harmonization & Cloud Platform",
+      period: baseProject?.period || "Nov 2024 – April 2025",
+      location: baseProject?.location || "Hyderabad, India",
+      bullets: [
+        "Architected and deployed an automated GCP Data Harmonization platform ingesting multi-source CPG and Retail point-of-sale (POS) and inventory feeds into BigQuery using Pub/Sub and Cloud Run microservices, standardizing disparate schemas with zero data loss.",
+        "Automated end-to-end cloud infrastructure provisioning and container orchestration using Terraform (IaC) and Google Kubernetes Engine (GKE), managing CI/CD deployment pipelines via Cloud Build, Artifact Registry, and Git workflows.",
+        "Implemented Dataplex data quality, semantic standardization, and master data harmonization pipelines across Landing, Staging, and Curated layers, eliminating product catalog discrepancies by 99.8%.",
+        "Engineered high-performance compute workloads across GCE instances and event-driven Cloud Functions, optimizing BigQuery SQL queries to accelerate CPG demand forecasting analytics by 60% and reduce scan costs.",
+        "Collaborated directly with business stakeholders, data engineers, architects, and leadership teams to drive data-driven decision-making, mentoring junior engineers on Git best practices and production SLA governance."
+      ]
+    };
+  }
+
+  // 2. TELECOM BIG DATA LAKEHOUSE & PYSPARK
+  // Triggered when JD emphasizes Telecom, CDR, subscriber analytics, Databricks PySpark
+  const isTelecomLakehouse = /telecom|call detail|cdr|subscriber|catalog/i.test(jdContext);
+  if (isTelecomLakehouse) {
     return {
       company: baseProject?.company || "Telecom Client",
       role: "AI-Powered Enterprise Search & Telecom Data Lakehouse",
@@ -46,39 +81,61 @@ export function synthesizeSecondProjectFromJD(baseProject, jdAnalysis, missingSk
     };
   }
 
-  // Universal synthesizer for any other domain (e.g. AWS Data, React Frontend, Python AI/ML, DevOps, Java Backend)
+  // 3. SNOWFLAKE / DBT / MODERN DATA STACK
+  if (/snowflake|dbt/i.test(jdContext)) {
+    return {
+      company: "Enterprise Analytics Client",
+      role: "Lead Data Engineer – Modern Data Lakehouse (Snowflake, dbt, Airflow)",
+      period: baseProject?.period || "Nov 2024 – April 2025",
+      location: baseProject?.location || "Hyderabad, India",
+      bullets: [
+        "Designed and deployed an enterprise data lakehouse utilizing Snowflake, dbt Core, and automated Airflow pipelines, centralizing multi-tenant SaaS application telemetry.",
+        "Engineered modular dbt transformation models with automated testing and semantic documentation, accelerating BI dashboards and executive reporting cycles by 50%.",
+        "Automated cloud infrastructure provisioning and RBAC security policies using Terraform and Git-based CI/CD workflows, ensuring least-privilege access and compliance.",
+        "Optimized Snowflake virtual warehouses, clustering keys, and SQL query execution plans, slashing monthly cloud computing expenditure by 40%.",
+        "Collaborated with product analytics and business intelligence stakeholders to establish trusted data models and real-time operational metrics."
+      ]
+    };
+  }
+
+  // 4. AWS CLOUD BIG DATA & STREAMING PLATFORM
+  if (/aws|amazon web services|glue|emr|redshift|kinesis/i.test(jdContext) && !/bigquery|gcp/i.test(jdContext)) {
+    return {
+      company: "Cloud Data & FinTech Client",
+      role: "Lead AWS Data Engineer – Streaming Lakehouse & Cloud Platform",
+      period: baseProject?.period || "Nov 2024 – April 2025",
+      location: baseProject?.location || "Remote / Hybrid",
+      bullets: [
+        "Architected an enterprise AWS data lake on Amazon S3 and Redshift, streaming 20M+ daily events using Amazon Kinesis and AWS Glue ETL pipelines.",
+        "Automated multi-environment cloud infrastructure and IAM security roles using Terraform (IaC), deploying containerized microservices via Amazon EKS.",
+        "Engineered high-throughput PySpark batch and streaming transformations on Amazon EMR, reducing data latency from hours to sub-minute intervals.",
+        "Optimized Amazon Redshift distribution keys and sort keys, reducing complex analytical query runtimes by 65%.",
+        "Partnered with technical architects and business leadership to deliver mission-critical BI reporting with 99.99% operational SLA uptime."
+      ]
+    };
+  }
+
+  // 5. UNIVERSAL DYNAMIC PROJECT SYNTHESIZER (For Any Domain: Frontend, Backend, AI/ML, DevOps)
   const topTech = missingTechNames.slice(0, 3).join(', ') || 'modern cloud technologies';
-  const roleTitle = targetRole && targetRole !== "Target Professional" ? `${targetRole} Platform Initiatives` : (baseProject?.role || "Core Engineering Platform");
-  
-  const generatedBullets = [];
-  
-  // Bullet 1: Core System Architecture & High-throughput Delivery (mapped to KP 1/2)
-  const kp1 = keyPoints[0]?.point || `design and implement scalable ${targetRole} infrastructure`;
-  generatedBullets.push(`Architected and delivered core platform components to ${kp1.toLowerCase().replace(/^[a-z]+ed\s+/, '')} utilizing ${topTech}, ensuring 99.99% operational SLA availability.`);
-
-  // Bullet 2: Performance Optimization & Tuning (mapped to KP 2/3)
-  const kp2 = keyPoints[1]?.point || `accelerate system throughput and reduce latency`;
+  const devopsTech = missingTechNames.filter(t => /docker|ci\/cd|git|linux|k8s|kubernetes|terraform|iac/i.test(t)).join(', ') || 'Terraform, Docker, and CI/CD pipelines';
+  const dataTech = missingTechNames.filter(t => /sql|spark|python|stream|lakehouse|warehouse|kafka|data/i.test(t)).join(', ') || 'scalable data pipelines';
   const perfTech = missingTechNames[1] || missingTechNames[0] || 'distributed frameworks';
-  generatedBullets.push(`Optimized execution pipelines and query efficiency using ${perfTech}, cutting latency by up to 60% and reducing compute overhead by 40%.`);
+  const roleTitle = targetRole && targetRole !== "Target Professional" ? `${targetRole} – Core Platform` : (baseProject?.role || "Core Engineering Platform");
 
-  // Bullet 3: Reusable Framework & Transformation (mapped to KP 3/4)
-  const kp3 = keyPoints[2]?.point || `build reusable data and business logic pipelines`;
-  generatedBullets.push(`Engineered modular, metadata-driven transformation utilities handling high-throughput ingestion with strict schema enforcement and zero data loss.`);
-
-  // Bullet 4: Search, AI or Downstream Integration (mapped to KP 4/5)
-  const kp4 = keyPoints[3]?.point || `integrate enterprise services with downstream platforms`;
-  generatedBullets.push(`Integrated production services with analytics and reporting engines, delivering real-time platform observability and accelerating stakeholder decisions.`);
-
-  // Bullet 5: CI/CD, Containerization & Infrastructure (mapped to KP 5/6)
-  const devopsTech = missingTechNames.filter(t => /docker|ci\/cd|git|linux|k8s|kubernetes|terraform/i.test(t)).join(', ') || 'Git, Docker, and Linux environments';
-  generatedBullets.push(`Established automated CI/CD deployment workflows using ${devopsTech}, cutting release cycle times by 50% with automated regression testing.`);
+  const kp1 = keyPoints[0]?.point || `design and implement scalable ${targetRole} architecture`;
 
   return {
     company: baseProject?.company || "Enterprise Client",
-    role: baseProject?.role ? `${baseProject.role} – ${targetRole}` : roleTitle,
+    role: roleTitle,
     period: baseProject?.period || "Nov 2024 – April 2025",
     location: baseProject?.location || "Remote / Hybrid",
-    bullets: generatedBullets
+    bullets: [
+      `Architected and delivered core platform components to ${kp1.toLowerCase().replace(/^[a-z]+ed\s+/, '')} utilizing ${topTech}, ensuring 99.99% operational SLA availability.`,
+      `Automated cloud infrastructure provisioning, container orchestration, and deployment workflows using ${devopsTech}, cutting release cycle times by 50%.`,
+      `Engineered high-throughput, metadata-driven processing pipelines using ${dataTech}, handling complex ingestion with strict schema enforcement and zero data loss.`,
+      `Optimized execution pipelines and compute workloads using ${perfTech}, cutting query/runtime latency by up to 60% and reducing infrastructure costs by 40%.`,
+      `Collaborated closely with business stakeholders, technical architects, and leadership teams to establish technical standards and mentor junior engineers on Git workflows.`
+    ]
   };
 }
 

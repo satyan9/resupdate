@@ -15,19 +15,26 @@ export const TECH_DICTIONARY = [
   "Redis", "High Availability", "Fault Tolerance", "Load Balancing", "Multithreading", "Concurrency", "CQRS", "API Gateway",
 
   // Cloud & Platforms
-  "AWS", "Amazon Web Services", "GCP", "Google Cloud", "Azure", "Microsoft Azure", "EC2", "S3", "AWS Lambda", "ECS", "EKS", "GKE", "Cloud Run", "Cloud Storage", "Cloudflare",
+  "AWS", "Amazon Web Services", "GCP", "Google Cloud", "Azure", "Microsoft Azure", "EC2", "S3", "AWS Lambda", "ECS", "EKS", 
+  "GKE", "Google Kubernetes Engine", "GCE", "Google Compute Engine", "Cloud Run", "Cloud Functions", "Cloud Storage", "Cloudflare",
   "Serverless", "CloudFormation", "Terraform", "Infrastructure as Code", "IaC", "Ansible", "Helm",
 
   // DevOps, Containers & Observability
   "Docker", "Kubernetes", "K8s", "CI/CD", "Continuous Integration", "Continuous Deployment", "GitHub Actions", "GitLab CI", "Jenkins", "ArgoCD", "CircleCI",
   "Linux", "Nginx", "Prometheus", "Grafana", "Datadog", "OpenTelemetry", "CloudWatch", "ELK Stack", "SRE", "DevOps",
+  "Cloud Build", "Artifact Registry", "Git",
 
   // Databases & Storage
   "PostgreSQL", "Postgres", "MySQL", "MongoDB", "DynamoDB", "Redis Caching", "Cassandra", "Elasticsearch", "OpenSearch", "SQL Server", "Oracle", "SQLite", "Firebase", "Supabase",
 
-  // Data Engineering & Big Data
+  // Data Engineering, Streaming & Governance
   "BigQuery", "Snowflake", "Databricks", "Apache Spark", "PySpark", "Apache Airflow", "Airflow", "Cloud Composer", "Data Fusion", "dbt", "Apache Flink", 
+  "Pub/Sub", "Google Cloud Pub/Sub", "Kafka", "Apache Kafka",
   "ETL", "ELT", "Data Pipelines", "Data Modeling", "Data Warehousing", "Data Lakehouse", "Data Governance", "Dataplex", "Data Transformation", "Data Quality", "Partitioning", "Clustering",
+  "Data Harmonization", "Harmonization", "Master Data Management", "Data Validation", "Metadata-Driven Pipelines",
+
+  // Industry & Domain
+  "CPG", "Retail",
 
   // AI, Machine Learning & Search
   "Machine Learning", "Deep Learning", "PyTorch", "TensorFlow", "Scikit-learn", "NLP", "Natural Language Processing", "Computer Vision", 
@@ -52,20 +59,30 @@ export function extractTargetRole(jdText) {
   if (!jdText) return "Target Professional";
   const lines = jdText.split('\n').map(l => l.trim()).filter(Boolean);
 
+  // 1. Explicit Role/Title label
   const explicitMatchRegex = /(?:Role|Title|Position|Job Title|Looking For):\s*(.+)/i;
-  for (let line of lines.slice(0, 8)) {
+  for (let line of lines.slice(0, 10)) {
     const roleMatch = line.match(explicitMatchRegex);
     if (roleMatch && roleMatch[1].trim().length < 80) {
       return roleMatch[1].replace(/^[#*•\-\s]+|[#*•\-\s]+$/g, '').trim();
     }
   }
 
-  const roleTitlePattern = /\b(?:Senior|Lead|Staff|Principal|Junior|Associate|Executive)?\s*(?:[A-Za-z/]+\s*){1,4}(?:Engineer|Developer|Architect|Lead|Manager|Specialist|Analyst|Scientist|Consultant|Administrator|Designer|SDE|DevOps|SRE|Programmer|Tester|QA)\b/i;
+  // 2. Action requirement sentence: e.g. "Require a highly skilled GCP Lead Data Engineer who can work on..."
+  const requireRegex = /(?:Require|Seeking|Looking for|Hiring|Need)\s+(?:a|an)?\s*(?:highly\s+skilled\s+|experienced\s+|talented\s+)?([A-Za-z0-9\s/]+?\b(?:Data Engineer|Cloud Engineer|DevOps Engineer|Software Engineer|Data Architect|Solutions Architect|Engineer|Developer|Architect|Specialist|Analyst|Scientist|Consultant))\b/i;
   for (let line of lines.slice(0, 10)) {
-    if (roleTitlePattern.test(line) && line.length < 80) {
-      const match = line.match(roleTitlePattern);
-      if (match) return match[0].trim();
-      return line.replace(/^#+\s*/, '').replace(/^[•*-\s]+/, '').trim();
+    const reqMatch = line.match(requireRegex);
+    if (reqMatch && reqMatch[1] && reqMatch[1].trim().length >= 4 && reqMatch[1].trim().length <= 60) {
+      return reqMatch[1].trim();
+    }
+  }
+
+  // 3. Standalone or inline role title pattern
+  const roleTitlePattern = /\b(?:Senior|Lead|Staff|Principal|Junior|Associate|Executive)?\s*(?:[A-Za-z/]+\s*){1,4}(?:Data Engineer|Cloud Engineer|DevOps Engineer|Software Engineer|Data Architect|Engineer|Developer|Architect|Specialist|Analyst|Scientist|Consultant|Lead|Manager|SDE|DevOps|SRE)\b/i;
+  for (let line of lines.slice(0, 10)) {
+    const match = line.match(roleTitlePattern);
+    if (match && match[0].trim().length >= 4 && match[0].trim().length <= 60) {
+      return match[0].trim();
     }
   }
 
@@ -191,9 +208,9 @@ export function extractJDKeywords(jdText) {
       let weight = occurrences >= 2 ? 3 : 2;
       let category = "Must-Have Technical Skills";
 
-      if (/aws|azure|gcp|google cloud|docker|kubernetes|k8s|terraform|ci\/cd|helm|linux|ansible|devops|sre/i.test(term)) {
+      if (/aws|azure|gcp|google cloud|docker|kubernetes|k8s|terraform|ci\/cd|helm|linux|ansible|devops|sre|gke|gce|cloud run|cloud functions|cloud build|artifact registry/i.test(term)) {
         category = "Cloud & Infrastructure";
-      } else if (/architecture|microservices|distributed|system design|event-driven|tdd|agile|scrum|governance|performance|scalability|rest/i.test(term)) {
+      } else if (/architecture|microservices|distributed|system design|event-driven|tdd|agile|scrum|governance|performance|scalability|rest|harmonization|data harmonization|cpg|retail|lakehouse|warehouse|dataplex|pipeline/i.test(term)) {
         category = "Architecture & Methodologies";
       } else if (/collaboration|mentorship|stakeholder|leadership|communication/i.test(term)) {
         category = "Leadership & Collaboration";
@@ -213,7 +230,14 @@ export function extractJDKeywords(jdText) {
   const commonWords = new Set([
     "The", "We", "You", "Our", "This", "That", "With", "For", "And", "Are", "Will", "Role", "Team", "Job", "Work", 
     "High", "Best", "Have", "Key", "Must", "Good", "Strong", "Years", "Able", "Help", "Lead", "Join", "Build", 
-    "Apply", "About", "Equal", "Opportunity", "Location", "Remote", "Hybrid", "Full", "Time", "Daily", "Life"
+    "Apply", "About", "Equal", "Opportunity", "Location", "Remote", "Hybrid", "Full", "Time", "Daily", "Life",
+    "Proven", "Deep", "Wide", "Should", "Nice", "Essential", "Required", "Preferred", "Bachelor", "Master", "Degree",
+    "Experience", "Knowledge", "Skills", "Qualifications", "Sector", "Industry", "Close", "Drive", "Range", "Expertise",
+    "Needs", "Directly", "Across", "Using", "Ensure", "Ensuring", "Well", "Both", "Each", "Such", "Under", "Over", "Into",
+    "Related", "Discipline", "Engineering", "Science", "Information", "Systems", "Solutions", "Services", "Hands",
+    "Leading", "Mentor", "Manage", "Client", "Clients", "Relationships", "Workflows", "Ability", "Effectively",
+    "Desired", "Professional", "Technical", "Decision", "Making", "Creating", "Independently", "Exceptional",
+    "Communication", "Presentation", "Interpersonal"
   ]);
 
   dynamicTechMatches.forEach(token => {

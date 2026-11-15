@@ -304,8 +304,29 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
         </div>
       </div>
 
-      {/* Quick Upgrade Notification Banner if Telecom project lacks PySpark */}
-      {telecomNeedsUpgrade && (
+      {/* Project 2 Skill-Based Upgrade Notification Banner */}
+      {resume.secondProjectUpgradeInfo && (
+        <div className="telecom-upgrade-banner no-print" style={{ borderColor: 'rgba(16, 185, 129, 0.4)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <Sparkles size={18} className="text-emerald" style={{ flexShrink: 0 }} />
+            <div>
+              <strong>Project #2 Tailored to JD:</strong> Integrated <strong>{resume.secondProjectUpgradeInfo.projectName}</strong> covering {resume.secondProjectUpgradeInfo.missingSkillsCount} skills ({resume.secondProjectUpgradeInfo.missingSkills.slice(0, 6).join(', ')}).
+            </div>
+          </div>
+          <button 
+            className="btn btn-secondary btn-sm" 
+            onClick={() => openEditor('experience')} 
+            type="button"
+            style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem' }}
+          >
+            <Edit3 size={13} />
+            Edit Project Bullets
+          </button>
+        </div>
+      )}
+
+      {/* Quick Upgrade Notification Banner if Telecom project lacks PySpark and not already upgraded */}
+      {!resume.secondProjectUpgradeInfo && telecomNeedsUpgrade && (
         <div className="telecom-upgrade-banner no-print">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <Zap size={18} className="text-emerald" style={{ flexShrink: 0 }} />
