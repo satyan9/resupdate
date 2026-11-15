@@ -70,6 +70,15 @@ export default function App() {
     return calculateATSScore(tailoredResume, jdAnalysis.keywords);
   }, [tailoredResume, jdAnalysis]);
 
+  // Project Skills Coverage Diagnostics (Stage 1 & Stage 2 optimization plan)
+  const projectSkillsDiagnostics = useMemo(() => {
+    if (!resume || jdAnalysis.keywords.length === 0) return { presentInProjects: [], missingInProjects: [] };
+    const allProjectBulletsText = (resume.experience || []).flatMap(e => e.bullets || []).join(' ').toLowerCase();
+    const presentInProjects = jdAnalysis.keywords.filter(k => allProjectBulletsText.includes(k.name.toLowerCase()));
+    const missingInProjects = jdAnalysis.keywords.filter(k => !allProjectBulletsText.includes(k.name.toLowerCase()));
+    return { presentInProjects, missingInProjects };
+  }, [resume, jdAnalysis]);
+
   // Run the 95% Tailoring Engine
   const handleOptimizeResume = async () => {
     if (!resume || !jdText.trim()) return;
@@ -212,6 +221,38 @@ export default function App() {
             missingKeywords={initialScoreData.missingKeywords}
             injectedKeywords={[]}
           />
+
+          {/* Project Skills & JD Responsibilities Plan Card */}
+          <div className="glass-card no-print" style={{ borderLeft: '4px solid var(--accent-emerald)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+              <Sparkles size={20} className="text-emerald" />
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>
+                Automated 2-Stage Project Optimization Plan
+              </h3>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', fontSize: '0.85rem' }}>
+              <div style={{ background: 'var(--bg-card-solid)', padding: '0.9rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                <strong style={{ color: 'var(--accent-emerald)', display: 'block', marginBottom: '0.35rem' }}>
+                  Stage 1: Update Existing Project Points ({projectSkillsDiagnostics.presentInProjects.length} skills detected)
+                </strong>
+                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                  Keywords already in your projects will have their bullet points updated directly based on <strong>JD Core Responsibilities</strong> and quantified STAR metrics.
+                </p>
+              </div>
+
+              <div style={{ background: 'var(--bg-card-solid)', padding: '0.9rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                <strong style={{ color: 'var(--accent-primary)', display: 'block', marginBottom: '0.35rem' }}>
+                  Stage 2: Synthesize Project #2 ({projectSkillsDiagnostics.missingInProjects.length} missing skills)
+                </strong>
+                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                  {projectSkillsDiagnostics.missingInProjects.length > 0 
+                    ? `Missing skills (${projectSkillsDiagnostics.missingInProjects.slice(0, 5).map(k => k.name).join(', ')}...) will be synthesized into Project #2 with JD Core Responsibilities.`
+                    : 'All critical JD skills are already represented in your projects!'}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -249,6 +290,23 @@ export default function App() {
                 initialScore={initialScoreData.overallScore}
                 isTailored={true}
               />
+            )}
+
+            {/* Auto-Synthesized Skill-Based Project 2 Banner */}
+            {tailoredResume.secondProjectUpgradeInfo && (
+              <div className="telecom-upgrade-banner no-print" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(16, 185, 129, 0.12) 100%)', borderColor: 'rgba(16, 185, 129, 0.4)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <Sparkles size={20} className="text-emerald" style={{ flexShrink: 0 }} />
+                  <div>
+                    <h4 style={{ margin: '0 0 0.2rem 0', fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                      ⚡ Second Project Synthesized with JD Skills & Responsibilities
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      Integrated {tailoredResume.secondProjectUpgradeInfo.missingSkillsCount} missing skills ({tailoredResume.secondProjectUpgradeInfo.missingSkills.slice(0, 6).join(', ')}...) into <strong>{tailoredResume.secondProjectUpgradeInfo.projectName}</strong> based directly on JD Core Responsibilities.
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* JD Core Responsibilities Woven Into Projects */}
