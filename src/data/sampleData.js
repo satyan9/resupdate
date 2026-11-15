@@ -42,15 +42,15 @@ export const SAMPLE_RESUME = {
     },
     {
       company: "Telecom Client",
-      role: "AI-Powered Enterprise Search & Catalog Data Platform",
+      role: "AI-Powered Enterprise Search & Telecom Data Lakehouse",
       period: "Nov 2024 – April 2025",
-      location: "Remote / Hybrid",
+      location: "Hyderabad, India",
       bullets: [
-        "Designed and developed a configuration-driven ETL framework using Python and PySpark on GCP to ingest, transform, and standardize complex nested JSON telecom catalog data into BigQuery Data Lakehouse environments, processing 5M+ records daily.",
-        "Engineered scalable BigQuery Data Warehousing and Data Modeling architectures with ingestion pipelines integrated with Cloud Storage, applying Partitioning and Clustering to accelerate query performance by 65% and cut compute overhead.",
-        "Built metadata-driven Python and PySpark Data Transformation pipelines to normalize nested structures, validate business rules, and ensure schema consistency across prepaid, postpaid, and broadband catalogs, achieving 99.9% data reliability.",
-        "Integrated BigQuery with Google Cloud Discovery Engine and Vertex AI Search to enable enterprise AI search through automated catalog indexing, metadata synchronization, and document ingestion utilities, boosting search retrieval speeds by 40%.",
-        "Established automated CI/CD deployment pipelines using Git, Docker containers, and Linux environments for Apache Airflow DAGs and ETL utilities, enforcing Cloud IAM security policies and Dataplex Data Governance, cutting release cycles by 50%."
+        "Architected an end-to-end GCP Telecom Data Lakehouse processing 50M+ daily Call Detail Records (CDRs) and catalog events using Python and PySpark on Databricks and BigQuery, implementing Medallion Architecture across Google Cloud Storage (GCS).",
+        "Developed high-throughput Python & PySpark Data Transformation pipelines on Databricks Delta Lake to clean, de-duplicate, and normalize complex nested JSON telecom telemetry, tuning shuffle partitions to cut compute runtime by 45%.",
+        "Engineered scalable BigQuery Data Warehousing and Data Modeling architectures for the Curated Gold layer, applying Partitioning and Clustering to reduce query latency by 65% and scan costs by 80%.",
+        "Integrated BigQuery with Google Cloud Discovery Engine and Vertex AI Search to power enterprise catalog search and real-time subscriber churn intelligence, automating document indexing and semantic embeddings sync.",
+        "Orchestrated multi-stage workflows with Apache Airflow (Cloud Composer) and established automated CI/CD deployment pipelines using Git, Docker containers, and Linux environments, enforcing Cloud IAM security policies and Dataplex Data Governance."
       ]
     }
   ],
@@ -92,3 +92,17 @@ Qualifications & Core Skills:
 • Proven track record with Dataplex, Data Modeling, Partitioning, Clustering, and Query Optimization.
 • Familiarity with Docker, CI/CD, Git, Linux, and Cloud IAM security policies.
 • Google Cloud Certified Professional Data Engineer is strongly preferred.`;
+
+export const RECOMMENDED_TELECOM_PROJECT = {
+  company: "Telecom Client",
+  role: "AI-Powered Enterprise Search & Telecom Data Lakehouse",
+  period: "Nov 2024 – April 2025",
+  location: "Hyderabad, India",
+  bullets: [
+    "Architected an end-to-end GCP Telecom Data Lakehouse processing 50M+ daily Call Detail Records (CDRs) and catalog events using Python and PySpark on Databricks and BigQuery, implementing Medallion Architecture across Google Cloud Storage (GCS).",
+    "Developed high-throughput Python & PySpark Data Transformation pipelines on Databricks Delta Lake to clean, de-duplicate, and normalize complex nested JSON telecom telemetry, tuning shuffle partitions to cut compute runtime by 45%.",
+    "Engineered scalable BigQuery Data Warehousing and Data Modeling architectures for the Curated Gold layer, applying Partitioning and Clustering to reduce query latency by 65% and scan costs by 80%.",
+    "Integrated BigQuery with Google Cloud Discovery Engine and Vertex AI Search to power enterprise catalog search and real-time subscriber churn intelligence, automating document indexing and semantic embeddings sync.",
+    "Orchestrated multi-stage workflows with Apache Airflow (Cloud Composer) and established automated CI/CD deployment pipelines using Git, Docker containers, and Linux environments, enforcing Cloud IAM security policies and Dataplex Data Governance."
+  ]
+};

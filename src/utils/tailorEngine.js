@@ -179,8 +179,30 @@ export function tailorResumeAlgorithmic(baseResume, jdAnalysis) {
 
       // Transform existing bullets by enriching them with JD requirements and quantifiable metrics
       if (originalBullets.length > 0) {
+        const isTelecomProject = /telecom|catalog|search/i.test((enhancedJob.company || '') + (enhancedJob.role || ''));
+        const lacksPySpark = !originalBullets.some(b => /pyspark/i.test(b));
+        const jdRequiresPySpark = keywords.some(k => /pyspark|spark/i.test(k.name));
+
         enhancedJob.bullets = originalBullets.map((bullet, bIdx) => {
-          let updated = bullet.trim();
+          let updated = bullet.trim()
+            .replace(/\bSynce\s+d\b/gi, 'Synced')
+            .replace(/\btransforma\s+tion\b/gi, 'transformation')
+            .replace(/\bCur\s+ated\b/gi, 'Curated')
+            .replace(/\bBigQuer\s+y\b/gi, 'BigQuery');
+
+          // If this is the telecom/catalog project and the JD requires PySpark while project lacks it, upgrade key bullets
+          if (isTelecomProject && lacksPySpark && jdRequiresPySpark) {
+            if (/python.*config.*etl/i.test(updated)) {
+              updated = updated.replace(/python\s+(?:config[-–—\s]*driven\s+)?etl\s+framework/i, 'Python and PySpark ETL framework on Databricks & BigQuery Lakehouse');
+            }
+            if (/from\s+bigquery\s+to\s+google\s+cloud\s+discovery\s+engine/i.test(updated) && !/vertex\s+ai\s+search/i.test(updated)) {
+              updated = updated.replace(/google\s+cloud\s+discovery\s+engine\s*(?:\([^)]+\))?/i, 'Google Cloud Discovery Engine and Vertex AI Search');
+            }
+            if (/catalog\s+sources\s+through\s+config\s+files/i.test(updated)) {
+              updated = updated.replace(/handled\s+catalog\s+sources\s+through\s+config\s+files/i, 'Engineered BigQuery Data Warehousing models and Partitioning strategies for telecom catalog sources');
+            }
+          }
+
           const matchedKp = assignedPoints[bIdx % assignedPoints.length];
 
           // Determine bullet category intent

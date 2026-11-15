@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Download, FileDown, Copy, Check, Eye, Sparkles, Printer, FileText, Link, Edit3, X } from 'lucide-react';
+import { Download, FileDown, Copy, Check, Eye, Sparkles, Printer, FileText, Link, Edit3, X, Zap } from 'lucide-react';
 import { exportResumeToDocx } from '../utils/docxExporter';
+import ResumeEditorModal from './ResumeEditorModal';
+import { RECOMMENDED_TELECOM_PROJECT } from '../data/sampleData';
 
 // Data normalization and text artifact cleaning helpers
 function cleanText(str) {
@@ -14,6 +16,12 @@ function cleanText(str) {
     .replace(/\bAI\s*[-–—]\s*Powered\b/gi, 'AI-Powered')
     .replace(/\b([a-zA-Z0-9]+)\s+[-–—]\s+(driven|premises|time|powered|based|native|scale|tier|level|centric)\b/gi, '$1-$2')
     .replace(/\b(on|real|multi|cross|end|well)\s+[-–—]\s+([a-zA-Z0-9]+)\b/gi, '$1-$2')
+    // Fix split words from PDF extraction
+    .replace(/\bSynce\s+d\b/gi, 'Synced')
+    .replace(/\btransforma\s+tion\b/gi, 'transformation')
+    .replace(/\bCur\s+ated\b/gi, 'Curated')
+    .replace(/\bBigQuer\s+y\b/gi, 'BigQuery')
+    .replace(/\bleast\s*[-–—]\s*privilege\b/gi, 'least-privilege')
     // Remove space before punctuation
     .replace(/\s+([,.:;!?])/g, '$1')
     // Remove space inside parentheses
@@ -76,19 +84,12 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
   const [highlightMode, setHighlightMode] = useState(true);
   const [copied, setCopied] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editModalTab, setEditModalTab] = useState('experience');
 
-  // Edit form state
-  const [editForm, setEditForm] = useState({
-    fullName: resume?.fullName || '',
-    headline: resume?.headline || 'Data Engineer | ETL/ELT Pipeline Development | Bigquery | Airflow',
-    summary: resume?.summary || '',
-    phone: resume?.phone || '+91 8639822170',
-    email: resume?.email || 'satyanarayanareddykolagatla@gmail.com',
-    location: resume?.location || 'Hyderabad, India',
-    linkedin: resume?.linkedin || 'https://www.linkedin.com/in/satyanarayana-reddy-kolagatla',
-    github: resume?.github || 'https://github.com/satyanarayanareddy',
-    portfolio: resume?.portfolio || ''
-  });
+  const openEditor = (tab = 'experience') => {
+    setEditModalTab(tab);
+    setIsEditModalOpen(true);
+  };
 
   if (!resume) return null;
 
@@ -107,6 +108,30 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
       }
     }
   }
+
+  // Check if second project or telecom project is missing PySpark from the JD
+  const telecomNeedsUpgrade = sanitizedExperience.some(
+    e => /telecom|catalog/i.test((e.company || '') + (e.role || '')) &&
+         !JSON.stringify(e.bullets || []).toLowerCase().includes('pyspark')
+  );
+
+  const handleQuickUpgradeTelecom = () => {
+    if (!resume || !onResumeUpdate) return;
+    const updatedExp = (resume.experience || []).map((exp, idx) => {
+      if (idx === 2 || /telecom|catalog/i.test((exp.company || '') + (exp.role || ''))) {
+        return {
+          ...exp,
+          company: RECOMMENDED_TELECOM_PROJECT.company,
+          role: RECOMMENDED_TELECOM_PROJECT.role,
+          period: RECOMMENDED_TELECOM_PROJECT.period,
+          location: RECOMMENDED_TELECOM_PROJECT.location,
+          bullets: [...RECOMMENDED_TELECOM_PROJECT.bullets]
+        };
+      }
+      return exp;
+    });
+    onResumeUpdate({ ...resume, experience: updatedExp });
+  };
 
   const handlePrint = () => {
     const oldTitle = document.title;
@@ -132,24 +157,6 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
       console.error("DOCX generation error:", e);
       alert("Error generating Word document. Please try Export ATS PDF instead.");
     }
-  };
-
-  const handleSaveContact = () => {
-    if (onResumeUpdate) {
-      onResumeUpdate({
-        ...resume,
-        fullName: cleanText(editForm.fullName),
-        headline: cleanText(editForm.headline),
-        summary: cleanText(editForm.summary),
-        phone: cleanText(editForm.phone),
-        email: cleanText(editForm.email),
-        location: cleanText(editForm.location),
-        linkedin: editForm.linkedin.trim(),
-        github: editForm.github.trim(),
-        portfolio: editForm.portfolio.trim()
-      });
-    }
-    setIsEditModalOpen(false);
   };
 
   const handleCopyText = () => {
@@ -256,25 +263,14 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
           </button>
           
           <button 
-            className="chip"
-            onClick={() => {
-              setEditForm({
-                fullName: resume.fullName || '',
-                headline: resume.headline || 'Data Engineer | ETL/ELT Pipeline Development | Bigquery | Airflow',
-                summary: resume.summary || '',
-                phone: resume.phone || '+91 8639822170',
-                email: resume.email || 'satyanarayanareddykolagatla@gmail.com',
-                location: resume.location || 'Hyderabad, India',
-                linkedin: resume.linkedin || 'https://www.linkedin.com/in/satyanarayana-reddy-kolagatla',
-                github: resume.github || 'https://github.com/satyanarayanareddy',
-                portfolio: resume.portfolio || ''
-              });
-              setIsEditModalOpen(true);
-            }}
+            className="chip active"
+            onClick={() => openEditor('experience')}
             type="button"
+            style={{ fontWeight: 600, color: 'var(--accent-emerald)', borderColor: 'rgba(16, 185, 129, 0.4)' }}
+            title="Edit all sections: Projects, Bullets, Skills, Header, Certifications"
           >
             <Edit3 size={13} />
-            Edit Header & Summary
+            Edit Resume & Projects
           </button>
         </div>
 
@@ -307,6 +303,27 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
           </button>
         </div>
       </div>
+
+      {/* Quick Upgrade Notification Banner if Telecom project lacks PySpark */}
+      {telecomNeedsUpgrade && (
+        <div className="telecom-upgrade-banner no-print">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <Zap size={18} className="text-emerald" style={{ flexShrink: 0 }} />
+            <div>
+              <strong>Telecom Project Optimization:</strong> Your 2nd project is currently missing key JD skills (<strong>PySpark, Databricks & BigQuery Lakehouse</strong>).
+            </div>
+          </div>
+          <button 
+            className="btn btn-emerald btn-sm" 
+            onClick={handleQuickUpgradeTelecom} 
+            type="button"
+            style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem' }}
+          >
+            <Sparkles size={13} />
+            Upgrade 2nd Project Now
+          </button>
+        </div>
+      )}
 
       {/* The Printable / Viewable Standard ATS Paper (ONLY THIS PRINTS TO PDF) */}
       <div className="paper-wrapper" id="ats-resume-paper">
@@ -370,7 +387,17 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
         {/* Professional Summary */}
         {sanitizedSummary && (
           <div className="resume-section">
-            <div className="resume-section-title">Professional Summary</div>
+            <div className="resume-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Professional Summary</span>
+              <button 
+                type="button" 
+                onClick={() => openEditor('header')} 
+                className="section-edit-btn no-print"
+                title="Edit professional summary and contact"
+              >
+                <Edit3 size={11} /> Edit Summary
+              </button>
+            </div>
             <p className="resume-summary-text">
               {renderHighlightedText(sanitizedSummary)}
             </p>
@@ -380,7 +407,17 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
         {/* Technical Skills */}
         {Object.keys(sanitizedSkills).length > 0 && (
           <div className="resume-section">
-            <div className="resume-section-title">Technical Skills</div>
+            <div className="resume-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Technical Skills</span>
+              <button 
+                type="button" 
+                onClick={() => openEditor('skills')} 
+                className="section-edit-btn no-print"
+                title="Edit technical skill categories and items"
+              >
+                <Edit3 size={11} /> Edit Skills
+              </button>
+            </div>
             <div className="resume-skills-block">
               {Object.entries(sanitizedSkills).map(([cat, skList], idx) => (
                 <div key={idx} className="resume-skills-category">
@@ -395,7 +432,17 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
         {/* Work Experience */}
         {sanitizedExperience && sanitizedExperience.length > 0 && (
           <div className="resume-section">
-            <div className="resume-section-title">Work Experience</div>
+            <div className="resume-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Work Experience</span>
+              <button 
+                type="button" 
+                onClick={() => openEditor('experience')} 
+                className="section-edit-btn no-print"
+                title="Edit project roles, companies, and bullet points"
+              >
+                <Edit3 size={11} /> Edit Projects
+              </button>
+            </div>
             {sanitizedExperience.map((job, idx) => (
               <div key={idx} className="resume-experience-item">
                 <div className="exp-header-row">
@@ -456,148 +503,17 @@ export default function ResumeViewer({ resume, onResumeUpdate, injectedKeywords 
         )}
       </div>
 
-      {/* Edit Contact & Links Modal */}
-      {isEditModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '580px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Edit3 size={18} className="text-emerald" />
-                Edit Header, Contact & Profile Links
-              </h3>
-              <button className="btn btn-outline btn-icon" onClick={() => setIsEditModalOpen(false)}>
-                <X size={16} />
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                  Full Name
-                </label>
-                <input 
-                  type="text" 
-                  value={editForm.fullName} 
-                  onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
-                  style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                  Headline (Displayed directly below name)
-                </label>
-                <input 
-                  type="text" 
-                  value={editForm.headline} 
-                  onChange={(e) => setEditForm({ ...editForm, headline: e.target.value })}
-                  style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                  Professional Summary
-                </label>
-                <textarea 
-                  rows={3}
-                  value={editForm.summary} 
-                  onChange={(e) => setEditForm({ ...editForm, summary: e.target.value })}
-                  style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)', fontSize: '0.85rem', resize: 'vertical' }}
-                  placeholder="Enter a 2-3 sentence impactful professional summary..."
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                    Phone Number
-                  </label>
-                  <input 
-                    type="text" 
-                    value={editForm.phone} 
-                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                    Email Address
-                  </label>
-                  <input 
-                    type="email" 
-                    value={editForm.email} 
-                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                    Location (City, Country)
-                  </label>
-                  <input 
-                    type="text" 
-                    value={editForm.location} 
-                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                    LinkedIn URL
-                  </label>
-                  <input 
-                    type="text" 
-                    placeholder="https://linkedin.com/in/..." 
-                    value={editForm.linkedin} 
-                    onChange={(e) => setEditForm({ ...editForm, linkedin: e.target.value })}
-                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                    GitHub URL
-                  </label>
-                  <input 
-                    type="text" 
-                    placeholder="https://github.com/..." 
-                    value={editForm.github} 
-                    onChange={(e) => setEditForm({ ...editForm, github: e.target.value })}
-                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-                    Portfolio / Website URL (Optional)
-                  </label>
-                  <input 
-                    type="text" 
-                    placeholder="https://..." 
-                    value={editForm.portfolio} 
-                    onChange={(e) => setEditForm({ ...editForm, portfolio: e.target.value })}
-                    style={{ width: '100%', padding: '0.55rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', background: 'var(--bg-card-solid)', color: 'var(--text-main)' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
-              <button className="btn btn-outline" onClick={() => setIsEditModalOpen(false)}>
-                Cancel
-              </button>
-              <button className="btn btn-emerald" onClick={handleSaveContact}>
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Full Resume & Projects Editor Modal */}
+      <ResumeEditorModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        resume={resume}
+        onSave={(updated) => {
+          if (onResumeUpdate) onResumeUpdate(updated);
+          setIsEditModalOpen(false);
+        }}
+        initialTab={editModalTab}
+      />
     </div>
   );
 }

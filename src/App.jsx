@@ -103,6 +103,7 @@ export default function App() {
 
   const handleUpdateResume = (updated) => {
     setTailoredResume(updated);
+    setResume(updated);
   };
 
   const canGoToStep2 = Boolean(resume && jdText.trim().length > 30);
