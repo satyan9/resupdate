@@ -194,7 +194,7 @@ export function tailorResumeAlgorithmic(baseResume, jdAnalysis) {
           const techToInject = (matchedKp?.matchedTech || []).find(t => !updated.toLowerCase().includes(t.toLowerCase()));
 
           // If bullet lacks a quantifiable impact metric, inject a recruiter-grade STAR metric
-          const hasMetric = /\b\d+%\b|\b\d+x\b|\b\d+\s*(?:ms|seconds|minutes|hours|days|TB|GB|M|k)\b|99\.9/i.test(updated);
+          const hasMetric = /\b\d+%|\b\d+x\b|\b\d+\s*(?:ms|seconds|minutes|hours|days|TB|GB|M|k)\b|99\.9/i.test(updated);
 
           if (!hasMetric) {
             if (isOptimization) {
@@ -213,7 +213,7 @@ export function tailorResumeAlgorithmic(baseResume, jdAnalysis) {
           }
 
           // Weave technology if appropriate and clean
-          if (techToInject && !updated.toLowerCase().includes(techToInject.toLowerCase())) {
+          if (techToInject && !updated.toLowerCase().includes(techToInject.toLowerCase()) && !originalBullets.some(b => b.toLowerCase().includes(techToInject.toLowerCase()))) {
             if (!/utilizing|using|leveraging|via/i.test(updated)) {
               updated = updated.replace(/\.$/, '') + ` utilizing ${techToInject}.`;
             }

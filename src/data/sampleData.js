@@ -46,11 +46,11 @@ export const SAMPLE_RESUME = {
       period: "Nov 2024 – April 2025",
       location: "Remote / Hybrid",
       bullets: [
-        "Designed and developed a configuration-driven ETL framework using Python to ingest, transform, and standardize telecom catalog data from multiple sources into BigQuery through scalable, reusable pipelines.",
-        "Built metadata-driven Python transformation pipelines to normalize complex JSON data, implement business validation rules, and process nested structures while ensuring schema consistency across multiple catalog formats.",
-        "Engineered BigQuery ingestion pipelines integrated with Cloud Storage, automated data refresh processes, and reusable loading utilities to support scalable, configuration-based data processing.",
-        "Integrated BigQuery with Google Cloud Discovery Engine to enable AI-powered enterprise search through automated catalog indexing, synchronization, and reusable Python-based document ingestion.",
-        "Developed BigQuery SQL analytics to monitor search performance and implemented telecom-specific transformation rules for prepaid, postpaid, broadband, roaming, and rewards catalogs in collaboration with business stakeholders."
+        "Designed and developed a configuration-driven ETL framework using Python and PySpark on GCP to ingest, transform, and standardize complex nested JSON telecom catalog data into BigQuery Data Lakehouse environments, processing 5M+ records daily.",
+        "Engineered scalable BigQuery Data Warehousing and Data Modeling architectures with ingestion pipelines integrated with Cloud Storage, applying Partitioning and Clustering to accelerate query performance by 65% and cut compute overhead.",
+        "Built metadata-driven Python and PySpark Data Transformation pipelines to normalize nested structures, validate business rules, and ensure schema consistency across prepaid, postpaid, and broadband catalogs, achieving 99.9% data reliability.",
+        "Integrated BigQuery with Google Cloud Discovery Engine and Vertex AI Search to enable enterprise AI search through automated catalog indexing, metadata synchronization, and document ingestion utilities, boosting search retrieval speeds by 40%.",
+        "Established automated CI/CD deployment pipelines using Git, Docker containers, and Linux environments for Apache Airflow DAGs and ETL utilities, enforcing Cloud IAM security policies and Dataplex Data Governance, cutting release cycles by 50%."
       ]
     }
   ],
